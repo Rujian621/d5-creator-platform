@@ -42,9 +42,7 @@
       <span class="text-gray-200">|</span>
       <span class="font-bold text-gray-800">🎛️ 运营后台</span>
     </div>
-    <div class="flex gap-2">
-      <button class="btn-secondary btn-sm" onclick="exportAll()">📋 导出报表</button>
-    </div>
+    <button class="btn-secondary btn-sm" onclick="exportAll()">📋 导出报表</button>
   </div>
 </div>
 
@@ -52,7 +50,6 @@
 <div class="bg-white border-b">
   <div class="max-w-7xl mx-auto px-4 flex gap-6">
     <button class="py-3 text-sm tab-active" data-tab="tasks" onclick="switchTab('tasks')">📋 任务管理</button>
-    <button class="py-3 text-sm text-gray-500 hover:text-gray-700" data-tab="signups" onclick="switchTab('signups')">👥 报名审核</button>
     <button class="py-3 text-sm text-gray-500 hover:text-gray-700" data-tab="contents" onclick="switchTab('contents')">🔗 返链审核</button>
   </div>
 </div>
@@ -71,7 +68,7 @@
         <thead class="bg-gray-50 text-gray-500">
           <tr>
             <th class="px-4 py-3 text-left">任务名称</th>
-            <th class="px-4 py-3 text-center">报名/名额</th>
+            <th class="px-4 py-3 text-center">报名数</th>
             <th class="px-4 py-3 text-left">截止</th>
             <th class="px-4 py-3 text-center">状态</th>
             <th class="px-4 py-3 text-center">操作</th>
@@ -79,43 +76,6 @@
         </thead>
         <tbody id="taskTableBody">
           <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无任务</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Signups Tab -->
-  <div id="tab-signups" class="hidden">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-bold text-gray-800">报名审核</h2>
-      <div class="flex gap-2">
-        <select id="signupTaskFilter" class="!py-2 !px-3 text-sm" onchange="renderSignups()"><option value="">全部任务</option></select>
-        <select id="signupStatusFilter" class="!py-2 !px-3 text-sm" onchange="renderSignups()">
-          <option value="">全部状态</option>
-          <option value="pending">待审核</option>
-          <option value="approved">已通过</option>
-          <option value="rejected">已拒绝</option>
-        </select>
-        <button class="btn-success btn-sm" onclick="batchApproveSignups()">✅ 批量通过</button>
-      </div>
-    </div>
-    <div class="bg-white rounded-2xl shadow overflow-hidden">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 text-gray-500">
-          <tr>
-            <th class="px-4 py-3 text-left"><input type="checkbox" id="signupSelectAll" onchange="toggleSignupSelectAll()"></th>
-            <th class="px-4 py-3 text-left">任务</th>
-            <th class="px-4 py-3 text-left">昵称</th>
-            <th class="px-4 py-3 text-left">粉丝数</th>
-            <th class="px-4 py-3 text-left">微信号</th>
-            <th class="px-4 py-3 text-left">主页</th>
-            <th class="px-4 py-3 text-left">备注</th>
-            <th class="px-4 py-3 text-center">状态</th>
-            <th class="px-4 py-3 text-center">操作</th>
-          </tr>
-        </thead>
-        <tbody id="signupTableBody">
-          <tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">暂无报名</td></tr>
         </tbody>
       </table>
     </div>
@@ -141,6 +101,7 @@
           <tr>
             <th class="px-4 py-3 text-left">任务</th>
             <th class="px-4 py-3 text-left">昵称</th>
+            <th class="px-4 py-3 text-left">主页</th>
             <th class="px-4 py-3 text-left">笔记链接</th>
             <th class="px-4 py-3 text-left">提交时间</th>
             <th class="px-4 py-3 text-center">状态</th>
@@ -148,7 +109,7 @@
           </tr>
         </thead>
         <tbody id="contentTableBody">
-          <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">暂无返链</td></tr>
+          <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无返链</td></tr>
         </tbody>
       </table>
     </div>
@@ -162,7 +123,7 @@
     <div class="space-y-3">
       <div><label class="block text-xs font-semibold text-gray-500 mb-1">任务名称 <span class="text-red-500">*</span></label>
         <input type="text" id="t_name" placeholder="例如：第五人格夏日活动" /></div>
-      <div><label class="block text-xs font-semibold text-gray-500 mb-1">任务奖励 <span class="text-red-500">*</span></label>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">任务奖励</label>
         <input type="text" id="t_reward" placeholder="例如：根据粉丝量级结算报酬" /></div>
       <div><label class="block text-xs font-semibold text-gray-500 mb-1">任务描述</label>
         <textarea id="t_desc" placeholder="任务说明、注意事项等"></textarea></div>
@@ -189,12 +150,12 @@
   </div>
 </div>
 
-<!-- View Signup Modal -->
-<div id="viewSignupModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+<!-- View Detail Modal -->
+<div id="viewDetailModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
   <div class="bg-white rounded-2xl p-6 w-[480px] shadow-xl">
-    <h3 class="text-lg font-bold text-gray-800 mb-4">👤 报名详情</h3>
-    <div id="signupDetailContent" class="space-y-2 text-sm mb-4"></div>
-    <div class="flex gap-3" id="signupActionBtns"></div>
+    <h3 class="text-lg font-bold text-gray-800 mb-4">📄 返链详情</h3>
+    <div id="detailContent" class="space-y-2 text-sm mb-4"></div>
+    <div class="flex gap-3" id="detailActionBtns"></div>
   </div>
 </div>
 
@@ -202,135 +163,84 @@
 <div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
 
 <script>
-const DB_KEY = 'd5_creator_platform_v1';
 const ADMIN_PWD = 'xhsrj2026';
+const DB_KEY = 'd5_creator_platform_v1';
 
-if (sessionStorage.getItem('admin_unlocked') !== '1') {
-  window.location.href = 'index.html';
-}
+if(sessionStorage.getItem('admin_unlocked')!=='1'){window.location.href='index.html';}
 
-let db = { tasks: [], signups: [], _version: 0 };
+let db = {tasks:[],signups:[],_version:0};
 
-function loadDB() {
-  const raw = localStorage.getItem(DB_KEY);
-  if (raw) {
-    db = JSON.parse(raw);
-    if (!db.signups) db.signups = [];
-    if (!db.tasks) db.tasks = [];
-  }
-  db.signups = (db.signups || []).map(s => ({
-    id: s.id || genId(),
-    taskId: s.taskId || '',
-    taskName: s.taskName || '',
-    creatorName: s.creatorName || '',
-    creatorType: s.creatorType || '',
-    creatorWechat: s.creatorWechat || '',
-    creatorProfile: s.creatorProfile || '',
-    creatorFans: s.creatorFans || '',
-    note: s.note || '',
-    contentLink: s.contentLink || '',
-    status: s.status || 'pending',
-    contentStatus: s.contentStatus || 'pending',
-    createdAt: s.createdAt || Date.now(),
-  }));
+function loadDB(){
+  const raw=localStorage.getItem(DB_KEY);
+  if(raw){db=JSON.parse(raw);if(!db.signups)db.signups=[];if(!db.tasks)db.tasks=[];}
+  db.signups=(db.signups||[]).map(s=>({...s,status:s.status||'pending',contentStatus:s.contentStatus||'pending'}));
   saveDB();
 }
-function saveDB() {
-  db._version = (db._version || 0) + 1;
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
-  refreshAll();
-}
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function saveDB(){db._version=(db._version||0)+1;localStorage.setItem(DB_KEY,JSON.stringify(db));refreshAll();}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 
-function switchTab(tab) {
-  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
-  document.getElementById('tab-' + tab).classList.remove('hidden');
-  document.querySelectorAll('[data-tab]').forEach(el => {
-    el.classList.remove('tab-active'); el.classList.add('text-gray-500');
-  });
-  const btn = document.querySelector(`[data-tab="${tab}"]`);
-  btn.classList.add('tab-active'); btn.classList.remove('text-gray-500');
+function switchTab(tab){
+  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('tab-'+tab).classList.remove('hidden');
+  document.querySelectorAll('[data-tab]').forEach(el=>{el.classList.remove('tab-active');el.classList.add('text-gray-500');});
+  const btn=document.querySelector(`[data-tab="${tab}"]`);
+  btn.classList.add('tab-active');btn.classList.remove('text-gray-500');
 }
 
 // ---- Tasks ----
-function showTaskModal(editId) {
+function showTaskModal(editId){
   document.getElementById('taskModal').classList.remove('hidden');
-  if (editId) {
-    const t = db.tasks.find(x => x.id === editId);
-    if (!t) return;
-    document.getElementById('taskModalTitle').textContent = '✏️ 编辑任务';
-    document.getElementById('t_editId').value = editId;
-    document.getElementById('t_name').value = t.name || '';
-    document.getElementById('t_reward').value = t.reward || '';
-    document.getElementById('t_desc').value = t.desc || '';
-    document.getElementById('t_req').value = t.req || '';
-    document.getElementById('t_launchDate').value = t.launchDate || '';
-    document.getElementById('t_deadline').value = t.deadline || '';
-    document.getElementById('t_maxSignup').value = t.maxSignup || '';
-    document.getElementById('t_status').value = t.status || 'active';
-  } else {
-    document.getElementById('taskModalTitle').textContent = '📝 发布推广任务';
-    document.getElementById('t_editId').value = '';
-    ['t_name','t_reward','t_desc','t_req','t_launchDate','t_deadline'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('t_maxSignup').value = '';
-    document.getElementById('t_status').value = 'active';
+  if(editId){
+    const t=db.tasks.find(x=>x.id===editId);if(!t)return;
+    document.getElementById('taskModalTitle').textContent='✏️ 编辑任务';
+    document.getElementById('t_editId').value=editId;
+    document.getElementById('t_name').value=t.name||'';
+    document.getElementById('t_reward').value=t.reward||'';
+    document.getElementById('t_desc').value=t.desc||'';
+    document.getElementById('t_req').value=t.req||'';
+    document.getElementById('t_launchDate').value=t.launchDate||'';
+    document.getElementById('t_deadline').value=t.deadline||'';
+    document.getElementById('t_maxSignup').value=t.maxSignup||'';
+    document.getElementById('t_status').value=t.status||'active';
+  }else{
+    document.getElementById('taskModalTitle').textContent='📝 发布推广任务';
+    document.getElementById('t_editId').value='';
+    ['t_name','t_reward','t_desc','t_req','t_launchDate','t_deadline'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('t_maxSignup').value='';
+    document.getElementById('t_status').value='active';
   }
 }
-function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
+function closeTaskModal(){document.getElementById('taskModal').classList.add('hidden');}
 
-function saveTask() {
-  const name = document.getElementById('t_name').value.trim();
-  const deadline = document.getElementById('t_deadline').value.trim();
-  if (!name) { showToast('请填写任务名称'); return; }
-  if (!deadline) { showToast('请填写截止日期'); return; }
-  const editId = document.getElementById('t_editId').value;
-  const taskData = {
-    name,
-    reward: document.getElementById('t_reward').value.trim(),
-    desc: document.getElementById('t_desc').value.trim(),
-    req: document.getElementById('t_req').value.trim(),
-    launchDate: document.getElementById('t_launchDate').value.trim(),
-    deadline,
-    maxSignup: document.getElementById('t_maxSignup').value,
-    status: document.getElementById('t_status').value,
-  };
-  if (editId) {
-    const idx = db.tasks.findIndex(x => x.id === editId);
-    if (idx >= 0) Object.assign(db.tasks[idx], taskData);
-  } else {
-    taskData.id = genId();
-    taskData.createdAt = Date.now();
-    db.tasks.push(taskData);
-  }
-  saveDB();
-  closeTaskModal();
-  showToast(editId ? '任务已更新 ✅' : '任务已发布 ');
+function saveTask(){
+  const name=document.getElementById('t_name').value.trim();
+  const deadline=document.getElementById('t_deadline').value.trim();
+  if(!name){showToast('请填写任务名称');return;}
+  if(!deadline){showToast('请填写截止日期');return;}
+  const editId=document.getElementById('t_editId').value;
+  const data={name,reward:document.getElementById('t_reward').value.trim(),desc:document.getElementById('t_desc').value.trim(),req:document.getElementById('t_req').value.trim(),launchDate:document.getElementById('t_launchDate').value.trim(),deadline,maxSignup:document.getElementById('t_maxSignup').value,status:document.getElementById('t_status').value};
+  if(editId){const idx=db.tasks.findIndex(x=>x.id===editId);if(idx>=0)Object.assign(db.tasks[idx],data);}
+  else{data.id=genId();data.createdAt=Date.now();db.tasks.push(data);}
+  saveDB();closeTaskModal();
+  showToast(editId?'任务已更新 ✅':'任务已发布 ');
 }
 
-function deleteTask(id) {
-  if (!confirm('确定删除此任务？关联的报名数据也会被删除。')) return;
-  db.tasks = db.tasks.filter(x => x.id !== id);
-  db.signups = db.signups.filter(x => x.taskId !== id);
-  saveDB();
+function deleteTask(id){
+  if(!confirm('确定删除？关联数据也会被删除。'))return;
+  db.tasks=db.tasks.filter(x=>x.id!==id);db.signups=db.signups.filter(x=>x.taskId!==id);saveDB();
   showToast('任务已删除');
 }
 
-function renderTasks() {
-  const tbody = document.getElementById('taskTableBody');
-  if (!db.tasks.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无任务</td></tr>';
-    return;
-  }
-  tbody.innerHTML = db.tasks.map(t => {
-    const count = db.signups.filter(s => s.taskId === t.id).length;
-    const maxLabel = t.maxSignup ? `${count}/${t.maxSignup}` : `${count}/不限`;
-    const badge = t.status === 'active'
-      ? '<span class="status-badge badge-active">进行中</span>'
-      : '<span class="status-badge badge-ended">已结束</span>';
+function renderTasks(){
+  const tbody=document.getElementById('taskTableBody');
+  if(!db.tasks.length){tbody.innerHTML='<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无任务</td></tr>';return;}
+  tbody.innerHTML=db.tasks.map(t=>{
+    const cnt=db.signups.filter(s=>s.taskId===t.id).length;
+    const badge=t.status==='active'?'<span class="status-badge badge-active">进行中</span>':'<span class="status-badge badge-ended">已结束</span>';
     return `<tr class="border-t border-gray-50 hover:bg-gray-50">
       <td class="px-4 py-3 font-medium">${esc(t.name)}</td>
-      <td class="px-4 py-3 text-center">${maxLabel}</td>
-      <td class="px-4 py-3 text-gray-500">${t.deadline || '-'}</td>
+      <td class="px-4 py-3 text-center">${cnt}</td>
+      <td class="px-4 py-3 text-gray-500">${t.deadline||'-'}</td>
       <td class="px-4 py-3 text-center">${badge}</td>
       <td class="px-4 py-3 text-center">
         <button class="btn-secondary btn-sm mr-1" onclick="showTaskModal('${t.id}')">编辑</button>
@@ -340,177 +250,88 @@ function renderTasks() {
   }).join('');
 }
 
-// ---- Signups ----
-function renderSignups() {
-  const tf = document.getElementById('signupTaskFilter').value;
-  const sf = document.getElementById('signupStatusFilter').value;
-  let list = [...db.signups];
-  if (tf) list = list.filter(s => s.taskId === tf);
-  if (sf) list = list.filter(s => s.status === sf);
-  list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-  const tbody = document.getElementById('signupTableBody');
-  if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">暂无报名</td></tr>';
-    return;
-  }
-  tbody.innerHTML = list.map(s => {
-    const badge = s.status === 'pending' ? '<span class="status-badge badge-pending">待审核</span>'
-      : s.status === 'approved' ? '<span class="status-badge badge-approved">已通过</span>'
-      : '<span class="status-badge badge-rejected">已拒绝</span>';
-    return `<tr class="border-t border-gray-50 hover:bg-gray-50">
-      <td class="px-4 py-3"><input type="checkbox" class="signup-cb" value="${s.id}"></td>
-      <td class="px-4 py-3 font-medium">${esc(s.taskName || '-')}</td>
-      <td class="px-4 py-3">${esc(s.creatorName)}</td>
-      <td class="px-4 py-3">${esc(s.creatorFans || '-')}</td>
-      <td class="px-4 py-3 text-gray-500">${esc(s.creatorWechat || '-')}</td>
-      <td class="px-4 py-3"><a href="${esc(s.creatorProfile || '#')}" target="_blank" class="text-purple-600 hover:underline text-xs">查看</a></td>
-      <td class="px-4 py-3 text-gray-500 max-w-[120px] truncate">${esc(s.note || '-')}</td>
-      <td class="px-4 py-3 text-center">${badge}</td>
-      <td class="px-4 py-3 text-center">
-        ${s.status === 'pending' ? `
-          <button class="btn-success btn-sm mr-1" onclick="reviewSignup('${s.id}','approved')">✅</button>
-          <button class="btn-danger btn-sm" onclick="reviewSignup('${s.id}','rejected')">❌</button>
-        ` : `<button class="btn-secondary btn-sm" onclick="viewSignup('${s.id}')">查看</button>`}
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function reviewSignup(id, status) {
-  const s = db.signups.find(x => x.id === id);
-  if (!s) return;
-  s.status = status;
-  saveDB();
-  showToast(status === 'approved' ? '已通过 ✅' : '已拒绝 ❌');
-}
-
-function viewSignup(id) {
-  const s = db.signups.find(x => x.id === id);
-  if (!s) return;
-  document.getElementById('signupDetailContent').innerHTML = `
-    <p><b>任务：</b>${esc(s.taskName || '-')}</p>
-    <p><b>昵称：</b>${esc(s.creatorName)}</p>
-    <p><b>粉丝数：</b>${esc(s.creatorFans || '-')}</p>
-    <p><b>微信号：</b>${esc(s.creatorWechat || '-')}</p>
-    <p><b>主页：</b><a href="${esc(s.creatorProfile || '#')}" target="_blank" class="text-purple-600 hover:underline">${esc(s.creatorProfile || '-')}</a></p>
-    <p><b>备注：</b>${esc(s.note || '-')}</p>
-    <p><b>报名状态：</b>${s.status === 'approved' ? '✅ 已通过' : s.status === 'rejected' ? '❌ 已拒绝' : ' 待审核'}</p>
-    <p><b>返链：</b>${s.contentLink ? `<a href="${esc(s.contentLink)}" target="_blank" class="text-purple-600 hover:underline">${esc(s.contentLink)}</a>` : '未提交'}</p>
-    <p><b>返链状态：</b>${s.contentStatus === 'approved' ? '✅ 已通过' : s.contentStatus === 'rejected' ? '❌ 已拒绝' : s.contentLink ? '⏳ 待审核' : '-'}</p>
-  `;
-  document.getElementById('signupActionBtns').innerHTML = `
-    <button class="btn-secondary flex-1" onclick="closeModal('viewSignupModal')">关闭</button>
-    ${s.status === 'pending' ? `<button class="btn-success flex-1" onclick="reviewSignup('${s.id}','approved');closeModal('viewSignupModal')">通过</button>
-    <button class="btn-danger flex-1" onclick="reviewSignup('${s.id}','rejected');closeModal('viewSignupModal')">拒绝</button>` : ''}
-    ${s.contentLink && s.contentStatus === 'pending' ? `<button class="btn-success flex-1" onclick="reviewContent('${s.id}','approved');closeModal('viewSignupModal')">通过返链</button>
-    <button class="btn-danger flex-1" onclick="reviewContent('${s.id}','rejected');closeModal('viewSignupModal')">拒绝返链</button>` : ''}
-  `;
-  document.getElementById('viewSignupModal').classList.remove('hidden');
-}
-
-function toggleSignupSelectAll() {
-  const c = document.getElementById('signupSelectAll').checked;
-  document.querySelectorAll('.signup-cb').forEach(cb => cb.checked = c);
-}
-
-function batchApproveSignups() {
-  const ids = Array.from(document.querySelectorAll('.signup-cb:checked')).map(cb => cb.value);
-  if (!ids.length) { showToast('请先选择报名'); return; }
-  ids.forEach(id => {
-    const s = db.signups.find(x => x.id === id);
-    if (s && s.status === 'pending') s.status = 'approved';
-  });
-  saveDB();
-  showToast(`已批量通过 ${ids.length} 条 ✅`);
-}
-
 // ---- Contents ----
-function renderContents() {
-  const tf = document.getElementById('contentTaskFilter').value;
-  const sf = document.getElementById('contentStatusFilter').value;
-  let list = db.signups.filter(s => s.contentLink);
-  if (tf) list = list.filter(s => s.taskId === tf);
-  if (sf) list = list.filter(s => s.contentStatus === sf);
-  list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+function renderContents(){
+  const tf=document.getElementById('contentTaskFilter').value;
+  const sf=document.getElementById('contentStatusFilter').value;
+  let list=db.signups.filter(s=>s.contentLink);
+  if(tf)list=list.filter(s=>s.taskId===tf);
+  if(sf)list=list.filter(s=>s.contentStatus===sf);
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
 
-  const tbody = document.getElementById('contentTableBody');
-  if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">暂无返链</td></tr>';
-    return;
-  }
-  tbody.innerHTML = list.map(s => {
-    const badge = s.contentStatus === 'pending' ? '<span class="status-badge badge-pending">待审核</span>'
-      : s.contentStatus === 'approved' ? '<span class="status-badge badge-approved">已通过</span>'
-      : '<span class="status-badge badge-rejected">已拒绝</span>';
+  const tbody=document.getElementById('contentTableBody');
+  if(!list.length){tbody.innerHTML='<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无返链</td></tr>';return;}
+  tbody.innerHTML=list.map(s=>{
+    const badge=s.contentStatus==='pending'?'<span class="status-badge badge-pending">待审核</span>'
+      :s.contentStatus==='approved'?'<span class="status-badge badge-approved">已通过</span>'
+      :'<span class="status-badge badge-rejected">已拒绝</span>';
     return `<tr class="border-t border-gray-50 hover:bg-gray-50">
-      <td class="px-4 py-3 font-medium">${esc(s.taskName || '-')}</td>
+      <td class="px-4 py-3 font-medium">${esc(s.taskName||'-')}</td>
       <td class="px-4 py-3">${esc(s.creatorName)}</td>
+      <td class="px-4 py-3"><a href="${esc(s.creatorProfile||'#')}" target="_blank" class="text-purple-600 hover:underline text-xs">查看</a></td>
       <td class="px-4 py-3"><a href="${esc(s.contentLink)}" target="_blank" class="text-purple-600 hover:underline text-xs break-all">${esc(s.contentLink)}</a></td>
-      <td class="px-4 py-3 text-gray-500">${s.createdAt ? new Date(s.createdAt).toLocaleDateString('zh-CN') : '-'}</td>
+      <td class="px-4 py-3 text-gray-500">${s.createdAt?new Date(s.createdAt).toLocaleDateString('zh-CN'):'-'}</td>
       <td class="px-4 py-3 text-center">${badge}</td>
       <td class="px-4 py-3 text-center">
-        ${s.contentStatus === 'pending' ? `
+        ${s.contentStatus==='pending'?`
           <button class="btn-success btn-sm mr-1" onclick="reviewContent('${s.id}','approved')">✅</button>
           <button class="btn-danger btn-sm" onclick="reviewContent('${s.id}','rejected')">❌</button>
-        ` : '<span class="text-gray-400 text-xs">已审核</span>'}
+        `:`<button class="btn-secondary btn-sm" onclick="viewDetail('${s.id}')">查看</button>`}
       </td>
     </tr>`;
   }).join('');
 }
 
-function reviewContent(id, status) {
-  const s = db.signups.find(x => x.id === id);
-  if (!s) return;
-  s.contentStatus = status;
-  saveDB();
-  showToast(status === 'approved' ? '返链已通过 ✅' : '返链已拒绝 ❌');
+function reviewContent(id,status){
+  const s=db.signups.find(x=>x.id===id);if(!s)return;
+  s.contentStatus=status;saveDB();
+  showToast(status==='approved'?'已通过 ✅':'已拒绝 ❌');
+}
+
+function viewDetail(id){
+  const s=db.signups.find(x=>x.id===id);if(!s)return;
+  document.getElementById('detailContent').innerHTML=`
+    <p><b>任务：</b>${esc(s.taskName||'-')}</p>
+    <p><b>昵称：</b>${esc(s.creatorName)}</p>
+    <p><b>主页：</b><a href="${esc(s.creatorProfile||'#')}" target="_blank" class="text-purple-600 hover:underline">${esc(s.creatorProfile||'-')}</a></p>
+    <p><b>笔记链接：</b><a href="${esc(s.contentLink)}" target="_blank" class="text-purple-600 hover:underline">${esc(s.contentLink)}</a></p>
+    <p><b>状态：</b>${s.contentStatus==='approved'?'✅ 已通过':s.contentStatus==='rejected'?'❌ 已拒绝':'⏳ 待审核'}</p>
+  `;
+  document.getElementById('detailActionBtns').innerHTML=`
+    <button class="btn-secondary flex-1" onclick="closeModal('viewDetailModal')">关闭</button>
+    ${s.contentStatus==='pending'?`<button class="btn-success flex-1" onclick="reviewContent('${s.id}','approved');closeModal('viewDetailModal')">通过</button>
+    <button class="btn-danger flex-1" onclick="reviewContent('${s.id}','rejected');closeModal('viewDetailModal')">拒绝</button>`:''}
+  `;
+  document.getElementById('viewDetailModal').classList.remove('hidden');
+}
+
+function populateFilters(){
+  const sel=document.getElementById('contentTaskFilter');const cur=sel.value;
+  sel.innerHTML='<option value="">全部任务</option>';
+  db.tasks.forEach(t=>{sel.innerHTML+=`<option value="${t.id}" ${t.id===cur?'selected':''}>${esc(t.name)}</option>`;});
 }
 
 // ---- Export ----
-function exportAll() {
-  let csv = '任务,昵称,粉丝数,微信号,主页,备注,报名状态,返链,返链状态,报名时间\n';
-  db.signups.forEach(s => {
-    csv += [
-      `"${s.taskName || ''}"`, `"${s.creatorName || ''}"`, `"${s.creatorFans || ''}"`,
-      `"${s.creatorWechat || ''}"`, `"${s.creatorProfile || ''}"`, `"${s.note || ''}"`,
-      s.status === 'approved' ? '通过' : s.status === 'rejected' ? '拒绝' : '待审核',
-      `"${s.contentLink || ''}"`,
-      s.contentStatus === 'approved' ? '通过' : s.contentStatus === 'rejected' ? '拒绝' : (s.contentLink ? '待审核' : '-'),
-      s.createdAt ? new Date(s.createdAt).toLocaleString('zh-CN') : ''
-    ].join(',');
-    csv += '\n';
+function exportAll(){
+  let csv='任务,昵称,主页,笔记链接,状态,提交时间\n';
+  db.signups.forEach(s=>{
+    csv+=[`"${s.taskName||''}"`,`"${s.creatorName||''}"`,`"${s.creatorProfile||''}"`,`"${s.contentLink||''}"`,
+      s.contentStatus==='approved'?'通过':s.contentStatus==='rejected'?'拒绝':'待审核',
+      s.createdAt?new Date(s.createdAt).toLocaleString('zh-CN'):''
+    ].join(',')+'\n';
   });
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `约稿数据_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`约稿数据_${new Date().toISOString().slice(0,10)}.csv`;a.click();
   showToast('报表已导出 ');
 }
 
-function populateFilters() {
-  ['signupTaskFilter', 'contentTaskFilter'].forEach(id => {
-    const sel = document.getElementById(id);
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">全部任务</option>';
-    db.tasks.forEach(t => {
-      sel.innerHTML += `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.name)}</option>`;
-    });
-  });
-}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(()=>{t.style.opacity='0';},2500);}
 
-function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.style.opacity = '1';
-  setTimeout(() => { t.style.opacity = '0'; }, 2500);
-}
-
-function refreshAll() { renderTasks(); populateFilters(); renderSignups(); renderContents(); }
-loadDB();
-refreshAll();
+function refreshAll(){renderTasks();populateFilters();renderContents();}
+loadDB();refreshAll();
 </script>
 </body>
 </html>
