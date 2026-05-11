@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>创作者 · 第五人格约稿平台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+  .btn-primary { background:#6c3eb8;color:white;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
+  .btn-primary:hover { background:#5a2ea0; }
+  .btn-secondary { background:#f3f4f6;color:#374151;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
+  .btn-secondary:hover { background:#e5e7eb; }
+  .btn-success { background:#10b981;color:white;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
+  .btn-success:hover { background:#059669; }
+  input[type=text],input[type=url],textarea,select {
+    border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;width:100%;outline:none;transition:border .2s;font-size:14px;
+  }
+  input:focus,textarea:focus,select:focus { border-color:#6c3eb8; }
+  textarea { min-height:60px;resize:vertical; }
+  .modal-backdrop { background:rgba(0,0,0,.45); }
+  .tab-active { border-bottom:3px solid #6c3eb8;color:#6c3eb8;font-weight:600; }
+  .task-card { border:1.5px solid #f0f0f0;border-radius:16px;padding:24px;background:white;transition:all .2s; }
+  .task-card:hover { box-shadow:0 4px 20px rgba(108,62,184,.1); border-color:#d8c4f0; }
+  .status-badge { display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600; }
+  .badge-pending { background:#fef3c7;color:#92400e; }
+  .badge-approved { background:#d1fae5;color:#065f46; }
+  .badge-rejected { background:#fee2e2;color:#991b1b; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<div class="bg-white shadow-sm sticky top-0 z-40">
+  <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="text-gray-400 hover:text-gray-600">← 返回</a>
+      <span class="text-gray-200">|</span>
+      <span class="font-bold text-gray-800">✍️ 创作者</span>
+      <span id="creatorNameDisplay" class="text-sm text-gray-500"></span>
+    </div>
+    <button class="text-sm text-gray-400 hover:text-gray-600" onclick="editProfile()">修改信息</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="bg-white border-b">
+  <div class="max-w-4xl mx-auto px-4 flex gap-6">
+    <button class="py-3 text-sm tab-active" data-tab="tasks" onclick="switchTab('tasks')">🎮 浏览任务</button>
+    <button class="py-3 text-sm text-gray-500 hover:text-gray-700" data-tab="mysignups" onclick="switchTab('mysignups')">📋 我的报名</button>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="max-w-4xl mx-auto px-4 py-6">
+
+  <!-- Tasks Tab -->
+  <div id="tab-tasks">
+    <div id="taskList" class="space-y-4"></div>
+  </div>
+
+  <!-- My Signups Tab -->
+  <div id="tab-mysignups" class="hidden">
+    <div id="mySignupList" class="space-y-4"></div>
+  </div>
+</div>
+
+<!-- Signup Modal -->
+<div id="signupModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 w-[480px] shadow-xl max-h-[90vh] overflow-y-auto">
+    <h3 class="text-lg font-bold text-gray-800 mb-1">📝 报名参与推广</h3>
+    <p class="text-gray-400 text-sm mb-4" id="signupTaskName"></p>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-xs text-amber-800">
+      ⚠️ 提交报名即代表你已阅读并同意任务规则，请务必按时完成内容。
+    </div>
+
+    <div class="space-y-3">
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">昵称 <span class="text-red-500">*</span></label>
+        <input type="text" id="s_name" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">微信号 <span class="text-red-500">*</span></label>
+        <input type="text" id="s_wechat" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">创作者类型</label>
+        <input type="text" id="s_type" readonly class="bg-gray-50" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">小红书主页链接 <span class="text-red-500">*</span></label>
+        <input type="url" id="s_profile" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">实时粉丝数 <span class="text-red-500">*</span></label>
+        <input type="text" id="s_fans" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">补充说明（可选）</label>
+        <textarea id="s_note" placeholder="有什么想对运营说的..."></textarea></div>
+    </div>
+    <input type="hidden" id="s_taskId" value="" />
+    <div class="flex gap-3 mt-5">
+      <button class="btn-secondary flex-1" onclick="closeModal('signupModal')">取消</button>
+      <button class="btn-primary flex-1" onclick="submitSignup()">确认报名</button>
+    </div>
+  </div>
+</div>
+
+<!-- Content Submit Modal -->
+<div id="contentModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 w-[480px] shadow-xl">
+    <h3 class="text-lg font-bold text-gray-800 mb-1">📤 提交作品返链</h3>
+    <p class="text-gray-400 text-sm mb-4" id="contentTaskName"></p>
+    <div class="space-y-3">
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">笔记/视频链接 <span class="text-red-500">*</span></label>
+        <input type="url" id="c_link" placeholder="https://www.xiaohongshu.com/explore/..." /></div>
+    </div>
+    <input type="hidden" id="c_signupId" value="" />
+    <div class="flex gap-3 mt-5">
+      <button class="btn-secondary flex-1" onclick="closeModal('contentModal')">取消</button>
+      <button class="btn-success flex-1" onclick="submitContent()">确认提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div id="editProfileModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 w-[420px] shadow-xl">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">✏️ 修改信息</h3>
+    <div class="space-y-3">
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">昵称 <span class="text-red-500">*</span></label>
+        <input type="text" id="e_name" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">微信号 <span class="text-red-500">*</span></label>
+        <input type="text" id="e_wechat" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">创作者类型</label>
+        <select id="e_type"><option value="博主">博主</option><option value="主播">主播</option></select></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">小红书主页链接 <span class="text-red-500">*</span></label>
+        <input type="url" id="e_profile" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">实时粉丝数 <span class="text-red-500">*</span></label>
+        <input type="text" id="e_fans" /></div>
+    </div>
+    <div class="flex gap-3 mt-5">
+      <button class="btn-secondary flex-1" onclick="closeModal('editProfileModal')">取消</button>
+      <button class="btn-primary flex-1" onclick="saveProfile()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
+
+<script>
+const DB_KEY = 'd5_creator_platform_v1';
+let db = { tasks: [], signups: [], _version: 0 };
+
+// Check if creator is logged in
+const crName = localStorage.getItem('cr_name');
+if (!crName) { window.location.href = 'index.html'; }
+
+// Load creator info
+document.getElementById('creatorNameDisplay').textContent = `${crName}（${localStorage.getItem('cr_type') || '创作者'}）`;
+
+// ---- Data ----
+function loadDB() {
+  const raw = localStorage.getItem(DB_KEY);
+  if (raw) {
+    db = JSON.parse(raw);
+    if (!db.contents) db.contents = [];
+    if (!db.signups) db.signups = [];
+    if (!db.tasks) db.tasks = [];
+  }
+  // Migrate: merge contents into signups
+  db.signups = (db.signups || []).map(s => ({
+    ...s,
+    contentStatus: s.contentStatus || 'pending',
+  }));
+}
+
+function saveDB() {
+  db._version = (db._version || 0) + 1;
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  refreshAll();
+}
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+// ---- Tabs ----
+function switchTab(tab) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+  document.querySelectorAll('[data-tab]').forEach(el => {
+    el.classList.remove('tab-active');
+    el.classList.add('text-gray-500');
+  });
+  const btn = document.querySelector(`[data-tab="${tab}"]`);
+  btn.classList.add('tab-active');
+  btn.classList.remove('text-gray-500');
+}
+
+// ---- Task Cards ----
+function renderTasks() {
+  const container = document.getElementById('taskList');
+  const activeTasks = db.tasks.filter(t => t.status === 'active');
+  if (!activeTasks.length) {
+    container.innerHTML = '<div class="text-center py-16 text-gray-400"><div class="text-4xl mb-3">🎮</div><p>暂无进行中的任务</p><p class="text-xs mt-1">有任务时会在这里展示</p></div>';
+    return;
+  }
+  container.innerHTML = activeTasks.map(t => {
+    const signupCount = db.signups.filter(s => s.taskId === t.id).length;
+    const maxLabel = t.maxSignup ? `${signupCount}/${t.maxSignup}` : `${signupCount}`;
+    const hasSignedUp = db.signups.some(s => s.taskId === t.id && s.creatorName === crName);
+    return `<div class="task-card">
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <div class="font-bold text-lg text-gray-800">${esc(t.gameName)}</div>
+          <div class="text-sm text-gray-500">${esc(t.gameType || '')} · ${esc(t.highlight || '')}</div>
+        </div>
+        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">${maxLabel} 人已报名</span>
+      </div>
+      ${t.desc ? `<p class="text-sm text-gray-600 mb-3 leading-relaxed">${esc(t.desc)}</p>` : ''}
+      <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-3">
+        ${t.reward ? `<div>🎁 <b>奖励</b>：${esc(t.reward)}</div>` : ''}
+        ${t.launchDate ? `<div>📢 <b>释出时间</b>：${esc(t.launchDate)}</div>` : ''}
+        ${t.deadline ? `<div>⏰ <b>提交截止</b>：${esc(t.deadline)}</div>` : ''}
+        ${t.req ? `<div class="col-span-2">📝 <b>内容要求</b>：${esc(t.req)}</div>` : ''}
+      </div>
+      <div class="flex justify-end">
+        ${hasSignedUp
+          ? '<span class="text-sm text-green-600 font-medium">✅ 已报名</span>'
+          : `<button class="btn-primary btn-sm" onclick="showSignup('${t.id}')">✍️ 报名参与</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- My Signups ----
+function renderMySignups() {
+  const container = document.getElementById('mySignupList');
+  const mySignups = db.signups.filter(s => s.creatorName === crName);
+  if (!mySignups.length) {
+    container.innerHTML = '<div class="text-center py-16 text-gray-400"><div class="text-4xl mb-3">📋</div><p>还没有报名记录</p><button class="btn-primary mt-3" onclick="switchTab(\'tasks\')">去浏览任务</button></div>';
+    return;
+  }
+  container.innerHTML = mySignups.map(s => {
+    const task = db.tasks.find(t => t.id === s.taskId);
+    const taskName = task ? task.gameName : (s.taskName || '未知任务');
+    let statusHtml = '';
+    if (s.status === 'pending') {
+      statusHtml = '<span class="status-badge badge-pending">⏳ 待审核</span>';
+    } else if (s.status === 'approved') {
+      statusHtml = '<span class="status-badge badge-approved">✅ 报名已通过</span>';
+      if (s.contentLink) {
+        if (s.contentStatus === 'pending') {
+          statusHtml += ' <span class="status-badge badge-pending">· 返链待审核</span>';
+        } else if (s.contentStatus === 'approved') {
+          statusHtml += ' <span class="status-badge badge-approved">· 返链已通过</span>';
+        } else {
+          statusHtml += ' <span class="status-badge badge-rejected">· 返链被拒绝</span>';
+        }
+      } else {
+        statusHtml += ` <button class="btn-success btn-sm ml-2" onclick="showContentModal('${s.id}','${taskName}')">📤 提交返链</button>`;
+      }
+    } else {
+      statusHtml = '<span class="status-badge badge-rejected">❌ 报名未通过</span>';
+    }
+    return `<div class="task-card">
+      <div class="flex justify-between items-start mb-2">
+        <div class="font-bold text-gray-800">${esc(taskName)}</div>
+      </div>
+      <div class="text-sm text-gray-500 mb-2">报名时间：${s.createdAt ? new Date(s.createdAt).toLocaleString('zh-CN') : '-'}</div>
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-2 flex-wrap">${statusHtml}</div>
+        ${s.contentLink ? `<a href="${esc(s.contentLink)}" target="_blank" class="text-xs text-purple-600 hover:underline">查看笔记 →</a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- Signup ----
+function showSignup(taskId) {
+  const task = db.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  document.getElementById('signupTaskName').textContent = `任务：${task.gameName}`;
+  document.getElementById('s_taskId').value = taskId;
+  document.getElementById('s_name').value = localStorage.getItem('cr_name') || '';
+  document.getElementById('s_wechat').value = localStorage.getItem('cr_wechat') || '';
+  document.getElementById('s_type').value = localStorage.getItem('cr_type') || '';
+  document.getElementById('s_profile').value = localStorage.getItem('cr_profile') || '';
+  document.getElementById('s_fans').value = localStorage.getItem('cr_fans') || '';
+  document.getElementById('s_note').value = '';
+  document.getElementById('signupModal').classList.remove('hidden');
+}
+
+function submitSignup() {
+  const taskId = document.getElementById('s_taskId').value;
+  const name = document.getElementById('s_name').value.trim();
+  const wechat = document.getElementById('s_wechat').value.trim();
+  const profile = document.getElementById('s_profile').value.trim();
+  const fans = document.getElementById('s_fans').value.trim();
+  const note = document.getElementById('s_note').value.trim();
+  if (!name) { showToast('请填写昵称'); return; }
+  if (!wechat) { showToast('请填写微信号'); return; }
+  if (!profile) { showToast('请填写主页链接'); return; }
+  if (!fans) { showToast('请填写粉丝数'); return; }
+
+  // Save profile update
+  localStorage.setItem('cr_name', name);
+  localStorage.setItem('cr_wechat', wechat);
+  localStorage.setItem('cr_profile', profile);
+  localStorage.setItem('cr_fans', fans);
+  document.getElementById('creatorNameDisplay').textContent = `${name}（${localStorage.getItem('cr_type')}）`;
+
+  const task = db.tasks.find(t => t.id === taskId);
+  db.signups.push({
+    id: genId(),
+    taskId,
+    taskName: task ? task.gameName : '',
+    creatorName: name,
+    creatorType: localStorage.getItem('cr_type') || '',
+    creatorWechat: wechat,
+    creatorProfile: profile,
+    creatorFans: fans,
+    note,
+    contentLink: '',
+    status: 'pending',
+    contentStatus: 'pending',
+    createdAt: Date.now()
+  });
+  saveDB();
+  closeModal('signupModal');
+  showToast('报名已提交，等待审核 ✅');
+}
+
+// ---- Content Submit ----
+function showContentModal(signupId, taskName) {
+  document.getElementById('contentTaskName').textContent = `任务：${taskName}`;
+  document.getElementById('c_signupId').value = signupId;
+  document.getElementById('c_link').value = '';
+  document.getElementById('contentModal').classList.remove('hidden');
+}
+
+function submitContent() {
+  const signupId = document.getElementById('c_signupId').value;
+  const link = document.getElementById('c_link').value.trim();
+  if (!link) { showToast('请填写笔记链接'); return; }
+  const s = db.signups.find(x => x.id === signupId);
+  if (!s) return;
+  s.contentLink = link;
+  s.contentStatus = 'pending';
+  saveDB();
+  closeModal('contentModal');
+  showToast('返链已提交，等待审核 ✅');
+}
+
+// ---- Profile ----
+function editProfile() {
+  document.getElementById('e_name').value = localStorage.getItem('cr_name') || '';
+  document.getElementById('e_wechat').value = localStorage.getItem('cr_wechat') || '';
+  document.getElementById('e_type').value = localStorage.getItem('cr_type') || '博主';
+  document.getElementById('e_profile').value = localStorage.getItem('cr_profile') || '';
+  document.getElementById('e_fans').value = localStorage.getItem('cr_fans') || '';
+  document.getElementById('editProfileModal').classList.remove('hidden');
+}
+
+function saveProfile() {
+  const name = document.getElementById('e_name').value.trim();
+  const wechat = document.getElementById('e_wechat').value.trim();
+  const type = document.getElementById('e_type').value;
+  const profile = document.getElementById('e_profile').value.trim();
+  const fans = document.getElementById('e_fans').value.trim();
+  if (!name || !wechat || !profile || !fans) { showToast('请填写所有必填项'); return; }
+  localStorage.setItem('cr_name', name);
+  localStorage.setItem('cr_wechat', wechat);
+  localStorage.setItem('cr_type', type);
+  localStorage.setItem('cr_profile', profile);
+  localStorage.setItem('cr_fans', fans);
+  document.getElementById('creatorNameDisplay').textContent = `${name}（${type}）`;
+  closeModal('editProfileModal');
+  showToast('信息已更新 ✅');
+}
+
+// ---- Helpers ----
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+// ---- Init ----
+function refreshAll() { renderTasks(); renderMySignups(); }
+loadDB();
+refreshAll();
+</script>
+</body>
+</html>
