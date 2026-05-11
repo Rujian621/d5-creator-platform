@@ -202,18 +202,15 @@ function renderTasks() {
     const hasSignedUp = db.signups.some(s => s.taskId === t.id && s.creatorName === crName);
     return `<div class="task-card">
       <div class="flex justify-between items-start mb-3">
-        <div>
-          <div class="font-bold text-lg text-gray-800">${esc(t.gameName)}</div>
-          <div class="text-sm text-gray-500">${esc(t.gameType || '')} · ${esc(t.highlight || '')}</div>
-        </div>
+        <div class="font-bold text-lg text-gray-800">${esc(t.name)}</div>
         <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">${maxLabel} 人已报名</span>
       </div>
       ${t.desc ? `<p class="text-sm text-gray-600 mb-3 leading-relaxed">${esc(t.desc)}</p>` : ''}
-      <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-3">
-        ${t.reward ? `<div>🎁 <b>奖励</b>：${esc(t.reward)}</div>` : ''}
+      <div class="space-y-1.5 text-xs text-gray-500 mb-3">
+        ${t.reward ? `<div> <b>奖励</b>：${esc(t.reward)}</div>` : ''}
         ${t.launchDate ? `<div>📢 <b>释出时间</b>：${esc(t.launchDate)}</div>` : ''}
         ${t.deadline ? `<div>⏰ <b>提交截止</b>：${esc(t.deadline)}</div>` : ''}
-        ${t.req ? `<div class="col-span-2">📝 <b>内容要求</b>：${esc(t.req)}</div>` : ''}
+        ${t.req ? `<div>📝 <b>内容要求</b>：${esc(t.req)}</div>` : ''}
       </div>
       <div class="flex justify-end">
         ${hasSignedUp
@@ -234,7 +231,7 @@ function renderMySignups() {
   }
   container.innerHTML = mySignups.map(s => {
     const task = db.tasks.find(t => t.id === s.taskId);
-    const taskName = task ? task.gameName : (s.taskName || '未知任务');
+    const taskName = task ? task.name : (s.taskName || '未知任务');
     let statusHtml = '';
     if (s.status === 'pending') {
       statusHtml = '<span class="status-badge badge-pending">⏳ 待审核</span>';
@@ -271,7 +268,7 @@ function renderMySignups() {
 function showSignup(taskId) {
   const task = db.tasks.find(t => t.id === taskId);
   if (!task) return;
-  document.getElementById('signupTaskName').textContent = `任务：${task.gameName}`;
+  document.getElementById('signupTaskName').textContent = `任务：${task.name}`;
   document.getElementById('s_taskId').value = taskId;
   document.getElementById('s_name').value = localStorage.getItem('cr_name') || '';
   document.getElementById('s_wechat').value = localStorage.getItem('cr_wechat') || '';
@@ -305,7 +302,7 @@ function submitSignup() {
   db.signups.push({
     id: genId(),
     taskId,
-    taskName: task ? task.gameName : '',
+    taskName: task ? task.name : '',
     creatorName: name,
     creatorType: localStorage.getItem('cr_type') || '',
     creatorWechat: wechat,
