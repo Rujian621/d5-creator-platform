@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运营后台 · 第五人格创作者约稿平台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="api.js"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+  .btn-primary { background:#6c3eb8;color:white;border-radius:10px;padding:8px 20px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
+  .btn-primary:hover { background:#5a2ea0; }
+  .btn-secondary { background:#f3f4f6;color:#374151;border-radius:10px;padding:8px 20px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
+  .btn-secondary:hover { background:#e5e7eb; }
+  .btn-success { background:#10b981;color:white;border-radius:10px;padding:8px 20px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
+  .btn-success:hover { background:#059669; }
+  .btn-danger { background:#ef4444;color:white;border-radius:10px;padding:8px 20px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
+  .btn-danger:hover { background:#dc2626; }
+  .btn-sm { padding:5px 14px;font-size:13px;border-radius:8px; }
+  input[type=text],input[type=url],input[type=number],input[type=date],textarea,select {
+    border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;width:100%;outline:none;transition:border .2s;font-size:14px;
+  }
+  input:focus,textarea:focus,select:focus { border-color:#6c3eb8; }
+  textarea { min-height:80px;resize:vertical; }
+  .modal-backdrop { background:rgba(0,0,0,.45); }
+  .tab-active { border-bottom:3px solid #6c3eb8;color:#6c3eb8;font-weight:600; }
+  .status-badge { display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600; }
+  .badge-pending { background:#fef3c7;color:#92400e; }
+  .badge-approved { background:#d1fae5;color:#065f46; }
+  .badge-rejected { background:#fee2e2;color:#991b1b; }
+  .badge-active { background:#dbeafe;color:#1e40af; }
+  .badge-ended { background:#e5e7eb;color:#6b7280; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<div class="bg-white shadow-sm sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="text-gray-400 hover:text-gray-600">← 返回</a>
+      <span class="text-gray-200">|</span>
+      <span class="font-bold text-gray-800">🎛️ 运营后台</span>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn-secondary btn-sm" onclick="exportAll()">📋 导出报表</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="bg-white border-b">
+  <div class="max-w-7xl mx-auto px-4 flex gap-6">
+    <button class="py-3 text-sm tab-active" data-tab="tasks" onclick="switchTab('tasks')">📋 任务管理</button>
+    <button class="py-3 text-sm text-gray-500 hover:text-gray-700" data-tab="signups" onclick="switchTab('signups')">👥 报名审核</button>
+    <button class="py-3 text-sm text-gray-500 hover:text-gray-700" data-tab="contents" onclick="switchTab('contents')">🔗 返链审核</button>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+  <!-- ========== Tasks Tab ========== -->
+  <div id="tab-tasks">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold text-gray-800">任务列表</h2>
+      <button class="btn-primary" onclick="showTaskModal()">➕ 发布任务</button>
+    </div>
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left">游戏名称</th>
+            <th class="px-4 py-3 text-left">类型</th>
+            <th class="px-4 py-3 text-left">招募</th>
+            <th class="px-4 py-3 text-center">报名/名额</th>
+            <th class="px-4 py-3 text-left">截止</th>
+            <th class="px-4 py-3 text-center">状态</th>
+            <th class="px-4 py-3 text-center">操作</th>
+          </tr>
+        </thead>
+        <tbody id="taskTableBody">
+          <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无任务</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== Signups Tab ========== -->
+  <div id="tab-signups" class="hidden">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold text-gray-800">报名审核</h2>
+      <div class="flex gap-2">
+        <select id="signupTaskFilter" class="!py-2 !px-3 text-sm" onchange="renderSignups()"><option value="">全部任务</option></select>
+        <select id="signupStatusFilter" class="!py-2 !px-3 text-sm" onchange="renderSignups()">
+          <option value="">全部状态</option>
+          <option value="pending">待审核</option>
+          <option value="approved">已通过</option>
+          <option value="rejected">已拒绝</option>
+        </select>
+        <button class="btn-success btn-sm" onclick="batchApproveSignups()">✅ 批量通过</button>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left"><input type="checkbox" id="signupSelectAll" onchange="toggleSignupSelectAll()"></th>
+            <th class="px-4 py-3 text-left">任务</th>
+            <th class="px-4 py-3 text-left">昵称</th>
+            <th class="px-4 py-3 text-left">类型</th>
+            <th class="px-4 py-3 text-left">粉丝数</th>
+            <th class="px-4 py-3 text-left">微信号</th>
+            <th class="px-4 py-3 text-left">主页</th>
+            <th class="px-4 py-3 text-left">备注</th>
+            <th class="px-4 py-3 text-center">状态</th>
+            <th class="px-4 py-3 text-center">操作</th>
+          </tr>
+        </thead>
+        <tbody id="signupTableBody">
+          <tr><td colspan="10" class="px-4 py-8 text-center text-gray-400">暂无报名</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== Contents Tab ========== -->
+  <div id="tab-contents" class="hidden">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold text-gray-800">返链审核</h2>
+      <div class="flex gap-2">
+        <select id="contentTaskFilter" class="!py-2 !px-3 text-sm" onchange="renderContents()"><option value="">全部任务</option></select>
+        <select id="contentStatusFilter" class="!py-2 !px-3 text-sm" onchange="renderContents()">
+          <option value="">全部状态</option>
+          <option value="pending">待审核</option>
+          <option value="approved">已通过</option>
+          <option value="rejected">已拒绝</option>
+        </select>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left">任务</th>
+            <th class="px-4 py-3 text-left">昵称</th>
+            <th class="px-4 py-3 text-left">笔记链接</th>
+            <th class="px-4 py-3 text-left">提交时间</th>
+            <th class="px-4 py-3 text-center">状态</th>
+            <th class="px-4 py-3 text-center">操作</th>
+          </tr>
+        </thead>
+        <tbody id="contentTableBody">
+          <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">暂无返链</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div id="taskModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 w-[560px] shadow-xl max-h-[90vh] overflow-y-auto">
+    <h3 class="text-lg font-bold text-gray-800 mb-4" id="taskModalTitle">📝 发布推广任务</h3>
+    <div class="space-y-3">
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">游戏名称 <span class="text-red-500">*</span></label>
+        <input type="text" id="t_gameName" placeholder="例如：第五人格" /></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">游戏类型</label>
+          <input type="text" id="t_gameType" placeholder="例如：非对称对抗" /></div>
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">一句话亮点 <span class="text-red-500">*</span></label>
+          <input type="text" id="t_highlight" placeholder="例如：悬疑推理·非对称对抗" /></div>
+      </div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">🎁 任务奖励 <span class="text-red-500">*</span></label>
+        <input type="text" id="t_reward" placeholder="例如：根据粉丝量级结算报酬" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">游戏链接</label>
+        <input type="url" id="t_gameLink" placeholder="https://..." /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">游戏简介</label>
+        <textarea id="t_desc" placeholder="任务描述、游戏简介"></textarea></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">内容要求</label>
+        <textarea id="t_req" placeholder="例如：笔记需包含至少50%游戏实机画面..."></textarea></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">📢 内容释出时间</label>
+          <input type="text" id="t_launchDate" placeholder="例如：5月15日中午12点后" /></div>
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">⏰ 数据提交截止 <span class="text-red-500">*</span></label>
+          <input type="date" id="t_deadline" /></div>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">招募类型</label>
+          <select id="t_creatorType"><option value="不限">不限</option><option value="博主">仅博主</option><option value="主播">仅主播</option></select></div>
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">名额上限</label>
+          <input type="number" id="t_maxSignup" placeholder="留空不限" /></div>
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">任务状态</label>
+          <select id="t_status"><option value="active">进行中</option><option value="ended">已结束</option></select></div>
+      </div>
+    </div>
+    <input type="hidden" id="t_editId" value="" />
+    <div class="flex gap-3 mt-5">
+      <button class="btn-secondary flex-1" onclick="closeTaskModal()">取消</button>
+      <button class="btn-primary flex-1" onclick="saveTask()">🚀 发布</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Profile Modal (for signups) -->
+<div id="viewSignupModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 w-[480px] shadow-xl">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">👤 报名详情</h3>
+    <div id="signupDetailContent" class="space-y-2 text-sm mb-4"></div>
+    <div class="flex gap-3" id="signupActionBtns"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
+
+<script>
+const DB_KEY = 'd5_creator_platform_v1';
+const ADMIN_PWD = 'xhsrj2026';
+
+// Check auth
+if (sessionStorage.getItem('admin_unlocked') !== '1') {
+  window.location.href = 'index.html';
+}
+
+let db = { tasks: [], signups: [], contents: [], _version: 0 };
+
+// ---- Data Layer ----
+function loadDB() {
+  const raw = localStorage.getItem(DB_KEY);
+  if (raw) {
+    db = JSON.parse(raw);
+    if (!db.contents) db.contents = [];
+    if (!db.signups) db.signups = [];
+    if (!db.tasks) db.tasks = [];
+  }
+  // Migrate: merge signups+contents into signups with contentLink/status
+  db.signups = (db.signups || []).map(s => ({
+    id: s.id || genId(),
+    taskId: s.taskId || '',
+    taskName: s.taskName || '',
+    creatorName: s.creatorName || '',
+    creatorType: s.creatorType || '',
+    creatorWechat: s.creatorWechat || '',
+    creatorProfile: s.creatorProfile || '',
+    creatorFans: s.creatorFans || '',
+    note: s.note || '',
+    contentLink: s.contentLink || '',
+    status: s.status || 'pending', // pending/approved/rejected
+    contentStatus: s.contentStatus || 'pending', // pending/approved/rejected
+    createdAt: s.createdAt || Date.now(),
+  }));
+  saveDB();
+}
+function saveDB() {
+  db._version = (db._version || 0) + 1;
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  refreshAll();
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+// ---- Tabs ----
+function switchTab(tab) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+  document.querySelectorAll('[data-tab]').forEach(el => {
+    el.classList.remove('tab-active');
+    el.classList.add('text-gray-500');
+  });
+  const activeBtn = document.querySelector(`[data-tab="${tab}"]`);
+  activeBtn.classList.add('tab-active');
+  activeBtn.classList.remove('text-gray-500');
+}
+
+// ---- Tasks ----
+function showTaskModal(editId) {
+  document.getElementById('taskModal').classList.remove('hidden');
+  if (editId) {
+    const t = db.tasks.find(x => x.id === editId);
+    if (!t) return;
+    document.getElementById('taskModalTitle').textContent = '✏️ 编辑任务';
+    document.getElementById('t_editId').value = editId;
+    document.getElementById('t_gameName').value = t.gameName || '';
+    document.getElementById('t_gameType').value = t.gameType || '';
+    document.getElementById('t_highlight').value = t.highlight || '';
+    document.getElementById('t_reward').value = t.reward || '';
+    document.getElementById('t_gameLink').value = t.gameLink || '';
+    document.getElementById('t_desc').value = t.desc || '';
+    document.getElementById('t_req').value = t.req || '';
+    document.getElementById('t_launchDate').value = t.launchDate || '';
+    document.getElementById('t_deadline').value = t.deadline || '';
+    document.getElementById('t_creatorType').value = t.creatorType || '不限';
+    document.getElementById('t_maxSignup').value = t.maxSignup || '';
+    document.getElementById('t_status').value = t.status || 'active';
+  } else {
+    document.getElementById('taskModalTitle').textContent = '📝 发布推广任务';
+    document.getElementById('t_editId').value = '';
+    ['t_gameName','t_gameType','t_highlight','t_reward','t_gameLink','t_desc','t_req','t_launchDate','t_deadline'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('t_creatorType').value = '不限';
+    document.getElementById('t_maxSignup').value = '';
+    document.getElementById('t_status').value = 'active';
+  }
+}
+function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
+
+function saveTask() {
+  const gameName = document.getElementById('t_gameName').value.trim();
+  const deadline = document.getElementById('t_deadline').value.trim();
+  if (!gameName) { showToast('请填写游戏名称'); return; }
+  if (!deadline) { showToast('请填写截止日期'); return; }
+  const editId = document.getElementById('t_editId').value;
+  const taskData = {
+    gameName,
+    gameType: document.getElementById('t_gameType').value.trim(),
+    highlight: document.getElementById('t_highlight').value.trim(),
+    reward: document.getElementById('t_reward').value.trim(),
+    gameLink: document.getElementById('t_gameLink').value.trim(),
+    desc: document.getElementById('t_desc').value.trim(),
+    req: document.getElementById('t_req').value.trim(),
+    launchDate: document.getElementById('t_launchDate').value.trim(),
+    deadline,
+    creatorType: document.getElementById('t_creatorType').value,
+    maxSignup: document.getElementById('t_maxSignup').value,
+    status: document.getElementById('t_status').value,
+  };
+  if (editId) {
+    const idx = db.tasks.findIndex(x => x.id === editId);
+    if (idx >= 0) { Object.assign(db.tasks[idx], taskData); }
+  } else {
+    taskData.id = genId();
+    taskData.createdAt = Date.now();
+    db.tasks.push(taskData);
+  }
+  saveDB();
+  closeTaskModal();
+  showToast(editId ? '任务已更新 ✅' : '任务已发布 🚀');
+}
+
+function deleteTask(id) {
+  if (!confirm('确定删除此任务？关联的报名数据也会被删除。')) return;
+  db.tasks = db.tasks.filter(x => x.id !== id);
+  db.signups = db.signups.filter(x => x.taskId !== id);
+  saveDB();
+  showToast('任务已删除');
+}
+
+function renderTasks() {
+  const tbody = document.getElementById('taskTableBody');
+  if (!db.tasks.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无任务</td></tr>';
+    return;
+  }
+  tbody.innerHTML = db.tasks.map(t => {
+    const signupCount = db.signups.filter(s => s.taskId === t.id).length;
+    const maxLabel = t.maxSignup ? `${signupCount}/${t.maxSignup}` : `${signupCount}/不限`;
+    const statusBadge = t.status === 'active'
+      ? '<span class="status-badge badge-active">进行中</span>'
+      : '<span class="status-badge badge-ended">已结束</span>';
+    return `<tr class="border-t border-gray-50 hover:bg-gray-50">
+      <td class="px-4 py-3 font-medium">${esc(t.gameName)}</td>
+      <td class="px-4 py-3 text-gray-500">${esc(t.gameType || '-')}</td>
+      <td class="px-4 py-3 text-gray-500">${esc(t.creatorType)}</td>
+      <td class="px-4 py-3 text-center">${maxLabel}</td>
+      <td class="px-4 py-3 text-gray-500">${t.deadline || '-'}</td>
+      <td class="px-4 py-3 text-center">${statusBadge}</td>
+      <td class="px-4 py-3 text-center">
+        <button class="btn-secondary btn-sm mr-1" onclick="showTaskModal('${t.id}')">编辑</button>
+        <button class="btn-danger btn-sm" onclick="deleteTask('${t.id}')">删除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ---- Signups ----
+function renderSignups() {
+  const taskFilter = document.getElementById('signupTaskFilter').value;
+  const statusFilter = document.getElementById('signupStatusFilter').value;
+  let filtered = [...db.signups];
+  if (taskFilter) filtered = filtered.filter(s => s.taskId === taskFilter);
+  if (statusFilter) filtered = filtered.filter(s => s.status === statusFilter);
+  filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  const tbody = document.getElementById('signupTableBody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="px-4 py-8 text-center text-gray-400">暂无报名</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(s => {
+    const statusBadge = s.status === 'pending' ? '<span class="status-badge badge-pending">待审核</span>'
+      : s.status === 'approved' ? '<span class="status-badge badge-approved">已通过</span>'
+      : '<span class="status-badge badge-rejected">已拒绝</span>';
+    return `<tr class="border-t border-gray-50 hover:bg-gray-50">
+      <td class="px-4 py-3"><input type="checkbox" class="signup-cb" value="${s.id}"></td>
+      <td class="px-4 py-3 font-medium">${esc(s.taskName || '-')}</td>
+      <td class="px-4 py-3">${esc(s.creatorName)}</td>
+      <td class="px-4 py-3 text-gray-500">${esc(s.creatorType || '-')}</td>
+      <td class="px-4 py-3">${esc(s.creatorFans || '-')}</td>
+      <td class="px-4 py-3 text-gray-500">${esc(s.creatorWechat || '-')}</td>
+      <td class="px-4 py-3"><a href="${esc(s.creatorProfile || '#')}" target="_blank" class="text-purple-600 hover:underline text-xs">查看</a></td>
+      <td class="px-4 py-3 text-gray-500 max-w-[120px] truncate">${esc(s.note || '-')}</td>
+      <td class="px-4 py-3 text-center">${statusBadge}</td>
+      <td class="px-4 py-3 text-center">
+        ${s.status === 'pending' ? `
+          <button class="btn-success btn-sm mr-1" onclick="reviewSignup('${s.id}','approved')">✅</button>
+          <button class="btn-danger btn-sm" onclick="reviewSignup('${s.id}','rejected')">❌</button>
+        ` : `<button class="btn-secondary btn-sm" onclick="viewSignup('${s.id}')">查看</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function reviewSignup(id, status) {
+  const s = db.signups.find(x => x.id === id);
+  if (!s) return;
+  s.status = status;
+  saveDB();
+  showToast(status === 'approved' ? '已通过 ✅' : '已拒绝 ❌');
+}
+
+function viewSignup(id) {
+  const s = db.signups.find(x => x.id === id);
+  if (!s) return;
+  const detail = document.getElementById('signupDetailContent');
+  detail.innerHTML = `
+    <p><b>任务：</b>${esc(s.taskName || '-')}</p>
+    <p><b>昵称：</b>${esc(s.creatorName)}</p>
+    <p><b>类型：</b>${esc(s.creatorType || '-')}</p>
+    <p><b>粉丝数：</b>${esc(s.creatorFans || '-')}</p>
+    <p><b>微信号：</b>${esc(s.creatorWechat || '-')}</p>
+    <p><b>主页：</b><a href="${esc(s.creatorProfile || '#')}" target="_blank" class="text-purple-600 hover:underline">${esc(s.creatorProfile || '-')}</a></p>
+    <p><b>备注：</b>${esc(s.note || '-')}</p>
+    <p><b>报名状态：</b>${s.status === 'approved' ? '✅ 已通过' : s.status === 'rejected' ? '❌ 已拒绝' : '⏳ 待审核'}</p>
+    <p><b>返链：</b>${s.contentLink ? `<a href="${esc(s.contentLink)}" target="_blank" class="text-purple-600 hover:underline">${esc(s.contentLink)}</a>` : '未提交'}</p>
+    <p><b>返链状态：</b>${s.contentStatus === 'approved' ? '✅ 已通过' : s.contentStatus === 'rejected' ? '❌ 已拒绝' : s.contentLink ? '⏳ 待审核' : '-'}</p>
+  `;
+  const btns = document.getElementById('signupActionBtns');
+  btns.innerHTML = `
+    <button class="btn-secondary flex-1" onclick="closeModal('viewSignupModal')">关闭</button>
+    ${s.status === 'pending' ? `<button class="btn-success flex-1" onclick="reviewSignup('${s.id}','approved');closeModal('viewSignupModal')">通过</button>
+    <button class="btn-danger flex-1" onclick="reviewSignup('${s.id}','rejected');closeModal('viewSignupModal')">拒绝</button>` : ''}
+    ${s.contentLink && s.contentStatus === 'pending' ? `<button class="btn-success flex-1" onclick="reviewContent('${s.id}','approved');closeModal('viewSignupModal')">通过返链</button>
+    <button class="btn-danger flex-1" onclick="reviewContent('${s.id}','rejected');closeModal('viewSignupModal')">拒绝返链</button>` : ''}
+  `;
+  document.getElementById('viewSignupModal').classList.remove('hidden');
+}
+
+function toggleSignupSelectAll() {
+  const checked = document.getElementById('signupSelectAll').checked;
+  document.querySelectorAll('.signup-cb').forEach(cb => cb.checked = checked);
+}
+
+function batchApproveSignups() {
+  const ids = Array.from(document.querySelectorAll('.signup-cb:checked')).map(cb => cb.value);
+  if (!ids.length) { showToast('请先选择报名'); return; }
+  ids.forEach(id => {
+    const s = db.signups.find(x => x.id === id);
+    if (s && s.status === 'pending') s.status = 'approved';
+  });
+  saveDB();
+  showToast(`已批量通过 ${ids.length} 条 ✅`);
+}
+
+// ---- Contents ----
+function renderContents() {
+  const taskFilter = document.getElementById('contentTaskFilter').value;
+  const statusFilter = document.getElementById('contentStatusFilter').value;
+  let filtered = db.signups.filter(s => s.contentLink);
+  if (taskFilter) filtered = filtered.filter(s => s.taskId === taskFilter);
+  if (statusFilter) filtered = filtered.filter(s => s.contentStatus === statusFilter);
+  filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  const tbody = document.getElementById('contentTableBody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">暂无返链</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(s => {
+    const statusBadge = s.contentStatus === 'pending' ? '<span class="status-badge badge-pending">待审核</span>'
+      : s.contentStatus === 'approved' ? '<span class="status-badge badge-approved">已通过</span>'
+      : '<span class="status-badge badge-rejected">已拒绝</span>';
+    return `<tr class="border-t border-gray-50 hover:bg-gray-50">
+      <td class="px-4 py-3 font-medium">${esc(s.taskName || '-')}</td>
+      <td class="px-4 py-3">${esc(s.creatorName)}</td>
+      <td class="px-4 py-3"><a href="${esc(s.contentLink)}" target="_blank" class="text-purple-600 hover:underline text-xs break-all">${esc(s.contentLink)}</a></td>
+      <td class="px-4 py-3 text-gray-500">${s.createdAt ? new Date(s.createdAt).toLocaleDateString('zh-CN') : '-'}</td>
+      <td class="px-4 py-3 text-center">${statusBadge}</td>
+      <td class="px-4 py-3 text-center">
+        ${s.contentStatus === 'pending' ? `
+          <button class="btn-success btn-sm mr-1" onclick="reviewContent('${s.id}','approved')">✅</button>
+          <button class="btn-danger btn-sm" onclick="reviewContent('${s.id}','rejected')">❌</button>
+        ` : `<span class="text-gray-400 text-xs">已审核</span>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function reviewContent(id, status) {
+  const s = db.signups.find(x => x.id === id);
+  if (!s) return;
+  s.contentStatus = status;
+  saveDB();
+  showToast(status === 'approved' ? '返链已通过 ✅' : '返链已拒绝 ❌');
+}
+
+// ---- Export ----
+function exportAll() {
+  let csv = '任务,昵称,类型,粉丝数,微信号,主页,报名状态,返链,返链状态,报名时间\n';
+  db.signups.forEach(s => {
+    csv += [
+      `"${s.taskName || ''}"`,
+      `"${s.creatorName || ''}"`,
+      `"${s.creatorType || ''}"`,
+      `"${s.creatorFans || ''}"`,
+      `"${s.creatorWechat || ''}"`,
+      `"${s.creatorProfile || ''}"`,
+      s.status === 'approved' ? '通过' : s.status === 'rejected' ? '拒绝' : '待审核',
+      `"${s.contentLink || ''}"`,
+      s.contentStatus === 'approved' ? '通过' : s.contentStatus === 'rejected' ? '拒绝' : (s.contentLink ? '待审核' : '-'),
+      s.createdAt ? new Date(s.createdAt).toLocaleString('zh-CN') : ''
+    ].join(',');
+    csv += '\n';
+  });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `约稿数据_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('报表已导出 📋');
+}
+
+// ---- Populate Task Filters ----
+function populateFilters() {
+  ['signupTaskFilter', 'contentTaskFilter'].forEach(id => {
+    const sel = document.getElementById(id);
+    const current = sel.value;
+    sel.innerHTML = '<option value="">全部任务</option>';
+    db.tasks.forEach(t => {
+      sel.innerHTML += `<option value="${t.id}" ${t.id === current ? 'selected' : ''}>${esc(t.gameName)}</option>`;
+    });
+  });
+}
+
+// ---- Helpers ----
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+// ---- Init ----
+function refreshAll() {
+  renderTasks();
+  populateFilters();
+  renderSignups();
+  renderContents();
+}
+loadDB();
+refreshAll();
+</script>
+</body>
+</html>
