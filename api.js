@@ -1,6 +1,6 @@
 // Cloudflare KV API client
 const API_BASE = '/api/db';
-const AUTH_TOKEN = 'd5-creator-2026';
+const AUTH_TOKEN = GAME_CONFIG.authToken;
 
 async function apiCall(action, data = {}) {
   const res = await fetch(API_BASE, {
