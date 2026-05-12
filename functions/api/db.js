@@ -9,7 +9,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const AUTH_TOKEN = 'd5-creator-2026';
+const AUTH_TOKENS = ['d5-creator-2026', 'xhsrj2026-auth'];
 
 async function getDB(env) {
   const raw = await env.DB_KV.get('db');
@@ -50,7 +50,7 @@ export async function onRequest(context) {
       });
     }
 
-    if (body.token !== AUTH_TOKEN) {
+    if (!AUTH_TOKENS.includes(body.token)) {
       return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
         status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
       });
