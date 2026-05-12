@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>运营后台 · 第五人格创作者约稿平台</title>
+<title id="pageTitle">运营后台</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="config.js"></script>
 <script src="api.js"></script>
+<script>document.title = '运营后台 · ' + GAME_CONFIG.name + '创作者约稿平台';</script>
 <style>
+  :root { --tc: #6c3eb8; --th: #5a2ea0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
-  .btn-primary { background:#6c3eb8;color:white;border-radius:10px;padding:8px 20px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
-  .btn-primary:hover { background:#5a2ea0; }
+  .btn-primary { background:var(--tc);color:white;border-radius:10px;padding:8px 20px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
+  .btn-primary:hover { background:var(--th); }
   .btn-secondary { background:#f3f4f6;color:#374151;border-radius:10px;padding:8px 20px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
   .btn-secondary:hover { background:#e5e7eb; }
   .btn-success { background:#10b981;color:white;border-radius:10px;padding:8px 20px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
@@ -20,19 +23,23 @@
   input[type=text],input[type=url],input[type=number],input[type=date],textarea,select {
     border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;width:100%;outline:none;transition:border .2s;font-size:14px;
   }
-  input:focus,textarea:focus,select:focus { border-color:#6c3eb8; }
+  input:focus,textarea:focus,select:focus { border-color:var(--tc); }
   textarea { min-height:80px;resize:vertical; }
   .modal-backdrop { background:rgba(0,0,0,.45); }
-  .tab-active { border-bottom:3px solid #6c3eb8;color:#6c3eb8;font-weight:600; }
+  .tab-active { border-bottom:3px solid var(--tc);color:var(--tc);font-weight:600; }
   .status-badge { display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600; }
   .badge-pending { background:#fef3c7;color:#92400e; }
   .badge-approved { background:#d1fae5;color:#065f46; }
   .badge-rejected { background:#fee2e2;color:#991b1b; }
   .badge-active { background:#dbeafe;color:#1e40af; }
   .badge-ended { background:#e5e7eb;color:#6b7280; }
-  .copy-btn { cursor:pointer;color:#6c3eb8;font-size:12px;margin-left:6px; }
+  .copy-btn { cursor:pointer;color:var(--tc);font-size:12px;margin-left:6px; }
   .copy-btn:hover { text-decoration:underline; }
 </style>
+<script>
+document.documentElement.style.setProperty('--tc', GAME_CONFIG.themeColor);
+document.documentElement.style.setProperty('--th', GAME_CONFIG.themeHover);
+</script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -181,7 +188,7 @@
 <div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
 
 <script>
-const ADMIN_PWD = 'xhsrj2026';
+const ADMIN_PWD = GAME_CONFIG.adminPwd;
 if (sessionStorage.getItem('admin_unlocked') !== '1') { window.location.href = 'index.html'; }
 
 let db = { tasks: [], signups: [], users: [], _version: 0 };
