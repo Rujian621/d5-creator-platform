@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>创作者 · 第五人格约稿平台</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="api.js"></script>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
   .btn-primary { background:#6c3eb8;color:white;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
@@ -26,11 +27,11 @@
   .badge-pending { background:#fef3c7;color:#92400e; }
   .badge-approved { background:#d1fae5;color:#065f46; }
   .badge-rejected { background:#fee2e2;color:#991b1b; }
+  .loading { opacity:0.5;pointer-events:none; }
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
-<!-- Header -->
 <div class="bg-white shadow-sm sticky top-0 z-40">
   <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
     <div class="flex items-center gap-3">
@@ -41,7 +42,6 @@
   </div>
 </div>
 
-<!-- Tabs -->
 <div class="bg-white border-b">
   <div class="max-w-4xl mx-auto px-4 flex gap-6">
     <button class="py-3 text-sm tab-active" data-tab="tasks" onclick="switchTab('tasks')">🎮 浏览任务</button>
@@ -49,16 +49,19 @@
   </div>
 </div>
 
-<!-- Content -->
+<div id="loadingOverlay" class="fixed inset-0 bg-white bg-opacity-70 flex items-center justify-center z-50 hidden">
+  <div class="text-lg text-gray-600">加载中...</div>
+</div>
+
 <div class="max-w-4xl mx-auto px-4 py-6">
-  <div id="tab-tasks"><div id="taskList" class="space-y-4"></div></div>
-  <div id="tab-mysignups" class="hidden"><div id="mySignupList" class="space-y-4"></div></div>
+  <div id="tab-tasks"><div id="taskList" class="space-y-4">加载中...</div></div>
+  <div id="tab-mysignups" class="hidden"><div id="mySignupList" class="space-y-4">加载中...</div></div>
 </div>
 
 <!-- Signup Modal -->
 <div id="signupModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
   <div class="bg-white rounded-2xl p-6 w-[480px] shadow-xl max-h-[90vh] overflow-y-auto">
-    <h3 class="text-lg font-bold text-gray-800 mb-1">📝 报名参与</h3>
+    <h3 class="text-lg font-bold text-gray-800 mb-1"> 报名参与</h3>
     <p class="text-gray-400 text-sm mb-4" id="signupTaskName"></p>
     <div class="space-y-3">
       <div><label class="block text-xs font-semibold text-gray-500 mb-1">小红书昵称 <span class="text-red-500">*</span></label>
@@ -76,26 +79,36 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
 
 <script>
-const DB_KEY = 'd5_creator_platform_v1';
 let db = { tasks: [], signups: [], _version: 0 };
 
-// Generate or get creator ID
+// Creator ID for tracking
 let creatorId = localStorage.getItem('cr_id');
 if (!creatorId) {
   creatorId = 'cr_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   localStorage.setItem('cr_id', creatorId);
 }
 
-function loadDB() {
-  const raw = localStorage.getItem(DB_KEY);
-  if (raw) { db = JSON.parse(raw); if (!db.signups) db.signups = []; if (!db.tasks) db.tasks = []; }
-  db.signups = (db.signups || []).map(s => ({...s, status: s.status || 'approved', contentStatus: s.contentStatus || 'pending'}));
+function showLoading() { document.getElementById('loadingOverlay').classList.remove('hidden'); }
+function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
+
+async function loadData() {
+  showLoading();
+  try {
+    const data = await getDB();
+    db.tasks = data.tasks || [];
+    db.signups = data.signups || [];
+    db._version = data._version || 0;
+  } catch (e) {
+    document.getElementById('taskList').textContent = '加载失败: ' + e.message;
+    document.getElementById('mySignupList').textContent = '加载失败: ' + e.message;
+  }
+  hideLoading();
+  refreshAll();
 }
-function saveDB() { db._version++; localStorage.setItem(DB_KEY, JSON.stringify(db)); refreshAll(); }
+
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
 function switchTab(tab) {
@@ -128,7 +141,7 @@ function renderTasks() {
         ${t.reward ? `<div>🎁 <b>奖励</b>：${esc(t.reward)}</div>` : ''}
         ${t.launchDate ? `<div>📢 <b>释出时间</b>：${esc(t.launchDate)}</div>` : ''}
         ${t.deadline ? `<div>⏰ <b>提交截止</b>：${esc(t.deadline)}</div>` : ''}
-        ${t.req ? `<div>📝 <b>内容要求</b>：${esc(t.req)}</div>` : ''}
+        ${t.req ? `<div> <b>内容要求</b>：${esc(t.req)}</div>` : ''}
       </div>
       <div class="flex justify-end">
         ${mySignup
@@ -153,13 +166,9 @@ function renderMySignups() {
     const taskName = task ? task.name : (s.taskName || '未知任务');
     let statusHtml = '';
     if (s.contentLink) {
-      if (s.contentStatus === 'approved') {
-        statusHtml = '<span class="status-badge badge-approved">✅ 审核通过</span>';
-      } else if (s.contentStatus === 'rejected') {
-        statusHtml = '<span class="status-badge badge-rejected">❌ 未通过</span>';
-      } else {
-        statusHtml = '<span class="status-badge badge-pending">⏳ 待审核</span>';
-      }
+      if (s.contentStatus === 'approved') statusHtml = '<span class="status-badge badge-approved">✅ 审核通过</span>';
+      else if (s.contentStatus === 'rejected') statusHtml = '<span class="status-badge badge-rejected">❌ 未通过</span>';
+      else statusHtml = '<span class="status-badge badge-pending">⏳ 待审核</span>';
     } else {
       statusHtml = '<span class="status-badge badge-pending">⏳ 待审核</span>';
     }
@@ -180,14 +189,13 @@ function showSignup(taskId) {
   if (!task) return;
   document.getElementById('signupTaskName').textContent = `任务：${task.name}`;
   document.getElementById('s_taskId').value = taskId;
-  // Fill cached name/profile
   document.getElementById('s_name').value = localStorage.getItem('cr_name') || '';
   document.getElementById('s_profile').value = localStorage.getItem('cr_profile') || '';
   document.getElementById('s_link').value = '';
   document.getElementById('signupModal').classList.remove('hidden');
 }
 
-function submitSignup() {
+async function submitSignup() {
   const taskId = document.getElementById('s_taskId').value;
   const name = document.getElementById('s_name').value.trim();
   const profile = document.getElementById('s_profile').value.trim();
@@ -196,12 +204,11 @@ function submitSignup() {
   if (!profile) { showToast('请填写主页链接'); return; }
   if (!link) { showToast('请填写笔记链接'); return; }
 
-  // Cache name/profile for next time
   localStorage.setItem('cr_name', name);
   localStorage.setItem('cr_profile', profile);
 
   const task = db.tasks.find(t => t.id === taskId);
-  db.signups.push({
+  const signup = {
     id: genId(),
     taskId,
     taskName: task ? task.name : '',
@@ -209,13 +216,21 @@ function submitSignup() {
     creatorName: name,
     creatorProfile: profile,
     contentLink: link,
-    status: 'approved', // auto-approve
+    status: 'approved',
     contentStatus: 'pending',
     createdAt: Date.now()
-  });
-  saveDB();
-  closeModal('signupModal');
-  showToast('已提交，等待审核 ✅');
+  };
+
+  showLoading();
+  try {
+    await createSignup(signup);
+    closeModal('signupModal');
+    showToast('已提交，等待审核 ✅');
+    await loadData();
+  } catch (e) {
+    showToast('提交失败: ' + e.message);
+    hideLoading();
+  }
 }
 
 // ---- Helpers ----
@@ -228,8 +243,7 @@ function showToast(msg) {
 }
 
 function refreshAll() { renderTasks(); renderMySignups(); }
-loadDB();
-refreshAll();
+loadData();
 </script>
 </body>
 </html>
