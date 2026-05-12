@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>第五人格创作者约稿平台</title>
+<title>第五人格 · 创作者约稿平台</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="api.js"></script>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
   .card-hover { transition: all .2s; }
-  .card-hover:hover { box-shadow: 0 8px 32px rgba(100,60,180,.15); transform: translateY(-3px); }
-  .identity-card { border:2px solid #f0f0f0;border-radius:20px;padding:32px 24px;cursor:pointer;transition:all .2s;background:white; }
+  .card-hover:hover { box-shadow: 0 8px 32px rgba(108,62,184,.15); transform: translateY(-3px); }
+  .identity-card { border:2px solid #f0f0f0;border-radius:20px;padding:28px 24px;cursor:pointer;transition:all .2s;background:white; }
   .identity-card:hover { border-color:#6c3eb8; }
   .btn-primary { background:#6c3eb8;color:white;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;transition:background .2s;border:none; }
   .btn-primary:hover { background:#5a2ea0; }
@@ -20,9 +21,10 @@
   }
   input:focus { border-color:#6c3eb8; }
   .modal-backdrop { background:rgba(0,0,0,.45); }
+  .tab-active { border-bottom:3px solid #6c3eb8;color:#6c3eb8;font-weight:600; }
 </style>
 </head>
-<body class="bg-gradient-to-br from-purple-50 via-white to-indigo-50 min-h-screen">
+<body class="bg-gradient-to-br from-purple-50 via-white to-pink-50 min-h-screen">
 
 <div class="bg-white shadow-sm">
   <div class="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
@@ -31,20 +33,20 @@
   </div>
 </div>
 
-<div class="max-w-2xl mx-auto mt-16 px-4 pb-16">
+<div class="max-w-2xl mx-auto mt-12 px-4 pb-16">
   <div class="text-center mb-10">
     <div class="text-5xl mb-4">🎯</div>
     <h2 class="text-3xl font-bold text-gray-800 mb-2">请选择你的身份</h2>
     <p class="text-gray-400 text-sm">选择后进入对应功能页面</p>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-lg mx-auto">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-md mx-auto">
 
     <!-- 运营后台 -->
     <div class="identity-card card-hover" onclick="handleAdmin()">
       <div class="text-4xl mb-3">🎛️</div>
       <div class="font-bold text-gray-800 text-lg mb-1">运营后台</div>
-      <div class="text-sm text-gray-500 leading-relaxed">发布任务 · 审核返链<br>导出数据</div>
+      <div class="text-sm text-gray-500 leading-relaxed">发布任务 · 审核返链<br>管理创作者 · 导出报表</div>
       <div class="mt-3 text-xs text-gray-400 flex items-center gap-1">🔐 需要密码</div>
     </div>
 
@@ -52,14 +54,12 @@
     <div class="identity-card card-hover" onclick="handleCreator()">
       <div class="text-4xl mb-3">✍️</div>
       <div class="font-bold text-gray-800 text-lg mb-1">创作者</div>
-      <div class="text-sm text-gray-500 leading-relaxed">浏览任务 · 报名参与<br>提交返链 · 查看审核</div>
+      <div class="text-sm text-gray-500 leading-relaxed">浏览任务 · 报名参与<br>提交笔记 · 查看审核</div>
+      <div class="mt-3 text-xs text-purple-500 font-medium">需要登录</div>
     </div>
 
   </div>
 </div>
-
-<!-- Toast -->
-<div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
 
 <!-- Admin Password Modal -->
 <div id="adminPwdModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
@@ -67,36 +67,144 @@
     <div class="text-3xl mb-3 text-center">🎛️</div>
     <h3 class="text-xl font-bold text-gray-800 text-center mb-1">运营后台</h3>
     <p class="text-gray-400 text-sm text-center mb-5">请输入访问密码</p>
-    <input type="password" id="adminPwdInput" placeholder="请输入密码" class="mb-4" />
-    <div class="flex gap-3">
-      <button class="btn-secondary flex-1" onclick="closeAdminPwd()">取消</button>
+    <input type="password" id="adminPwdInput" placeholder="请输入密码" />
+    <div class="flex gap-3 mt-4">
+      <button class="btn-secondary flex-1" onclick="closeModal('adminPwdModal')">取消</button>
       <button class="btn-primary flex-1" onclick="verifyAdminPwd()">进入</button>
     </div>
   </div>
 </div>
 
+<!-- Creator Auth Modal (Login + Register) -->
+<div id="creatorAuthModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl p-8 w-[400px] shadow-xl">
+    <div class="flex border-b mb-5">
+      <button class="flex-1 py-2 text-sm font-semibold tab-active" id="authTabLogin" onclick="switchAuthTab('login')">登录</button>
+      <button class="flex-1 py-2 text-sm text-gray-400" id="authTabRegister" onclick="switchAuthTab('register')">注册</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <div class="space-y-4">
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">用户名</label>
+          <input type="text" id="loginUser" placeholder="输入你的用户名" /></div>
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">密码</label>
+          <input type="password" id="loginPwd" placeholder="输入你的密码" /></div>
+      </div>
+      <button class="btn-primary w-full mt-5" onclick="doLogin()">登录</button>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerForm" class="hidden">
+      <div class="space-y-4">
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">用户名 <span class="text-red-500">*</span></label>
+          <input type="text" id="regUser" placeholder="设置你的用户名（不可重复）" /></div>
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">密码 <span class="text-red-500">*</span></label>
+          <input type="password" id="regPwd" placeholder="至少6位" /></div>
+        <div><label class="block text-xs font-semibold text-gray-500 mb-1">确认密码</label>
+          <input type="password" id="regPwd2" placeholder="再次输入密码" /></div>
+      </div>
+      <button class="btn-primary w-full mt-5" onclick="doRegister()">注册并进入</button>
+    </div>
+
+    <button class="btn-secondary w-full mt-3 text-sm" onclick="closeModal('creatorAuthModal')">取消</button>
+  </div>
+</div>
+
+<div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
+
 <script>
 const ADMIN_PWD = 'xhsrj2026';
 
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(()=>{t.style.opacity='0';},2500);}
-function closeModal(id){document.getElementById(id).classList.add('hidden');}
-
-function handleAdmin(){
-  if(sessionStorage.getItem('admin_unlocked')==='1'){window.location.href='admin.html';return;}
-  document.getElementById('adminPwdInput').value='';
+// ---- Admin ----
+function handleAdmin() {
+  if (sessionStorage.getItem('admin_unlocked') === '1') { window.location.href = 'admin.html'; return; }
+  document.getElementById('adminPwdInput').value = '';
   document.getElementById('adminPwdModal').classList.remove('hidden');
-  setTimeout(()=>document.getElementById('adminPwdInput').focus(),100);
+  setTimeout(() => document.getElementById('adminPwdInput').focus(), 100);
 }
-function closeAdminPwd(){closeModal('adminPwdModal');}
-function verifyAdminPwd(){
-  if(document.getElementById('adminPwdInput').value.trim()===ADMIN_PWD){
-    sessionStorage.setItem('admin_unlocked','1');
-    window.location.href='admin.html';
-  }else{showToast('密码错误 ❌');}
+function verifyAdminPwd() {
+  if (document.getElementById('adminPwdInput').value.trim() === ADMIN_PWD) {
+    sessionStorage.setItem('admin_unlocked', '1');
+    window.location.href = 'admin.html';
+  } else { showToast('密码错误 ❌'); }
 }
-document.getElementById('adminPwdInput').addEventListener('keydown',e=>{if(e.key==='Enter')verifyAdminPwd();});
+document.getElementById('adminPwdInput').addEventListener('keydown', e => { if(e.key==='Enter') verifyAdminPwd(); });
 
-function handleCreator(){window.location.href='creator.html';}
+// ---- Creator Auth ----
+function handleCreator() {
+  // Check if already logged in (session)
+  const sessionUser = sessionStorage.getItem('creator_username');
+  if (sessionUser) { window.location.href = 'creator.html'; return; }
+  // Show auth modal
+  switchAuthTab('login');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPwd').value = '';
+  document.getElementById('regUser').value = '';
+  document.getElementById('regPwd').value = '';
+  document.getElementById('regPwd2').value = '';
+  document.getElementById('creatorAuthModal').classList.remove('hidden');
+}
+
+function switchAuthTab(tab) {
+  if (tab === 'login') {
+    document.getElementById('loginForm').classList.remove('hidden');
+    document.getElementById('registerForm').classList.add('hidden');
+    document.getElementById('authTabLogin').classList.add('tab-active');
+    document.getElementById('authTabLogin').classList.remove('text-gray-400');
+    document.getElementById('authTabRegister').classList.remove('tab-active');
+    document.getElementById('authTabRegister').classList.add('text-gray-400');
+  } else {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('registerForm').classList.remove('hidden');
+    document.getElementById('authTabRegister').classList.add('tab-active');
+    document.getElementById('authTabRegister').classList.remove('text-gray-400');
+    document.getElementById('authTabLogin').classList.remove('tab-active');
+    document.getElementById('authTabLogin').classList.add('text-gray-400');
+  }
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPwd').value;
+  if (!username) { showToast('请输入用户名'); return; }
+  if (!password) { showToast('请输入密码'); return; }
+  try {
+    await loginUser(username, password);
+    sessionStorage.setItem('creator_username', username);
+    closeModal('creatorAuthModal');
+    window.location.href = 'creator.html';
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+document.getElementById('loginPwd').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+async function doRegister() {
+  const username = document.getElementById('regUser').value.trim();
+  const password = document.getElementById('regPwd').value;
+  const password2 = document.getElementById('regPwd2').value;
+  if (!username) { showToast('请输入用户名'); return; }
+  if (!password) { showToast('请设置密码'); return; }
+  if (password.length < 6) { showToast('密码至少6位'); return; }
+  if (password !== password2) { showToast('两次密码不一致'); return; }
+  try {
+    await registerUser(username, password);
+    sessionStorage.setItem('creator_username', username);
+    closeModal('creatorAuthModal');
+    showToast('注册成功 🎉');
+    setTimeout(() => { window.location.href = 'creator.html'; }, 500);
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
 </script>
 </body>
 </html>
