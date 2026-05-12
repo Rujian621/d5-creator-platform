@@ -30,7 +30,8 @@
   .badge-rejected { background:#fee2e2;color:#991b1b; }
   .badge-active { background:#dbeafe;color:#1e40af; }
   .badge-ended { background:#e5e7eb;color:#6b7280; }
-  .loading { opacity:0.5;pointer-events:none; }
+  .copy-btn { cursor:pointer;color:#6c3eb8;font-size:12px;margin-left:6px; }
+  .copy-btn:hover { text-decoration:underline; }
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -53,6 +54,7 @@
   <div class="max-w-7xl mx-auto px-4 flex gap-6">
     <button class="py-3 text-sm tab-active" data-tab="tasks" onclick="switchTab('tasks')">📋 任务管理</button>
     <button class="py-3 text-sm text-gray-500 hover:text-gray-700" data-tab="contents" onclick="switchTab('contents')">🔗 返链审核</button>
+    <button class="py-3 text-sm text-gray-500 hover:text-gray-700" data-tab="users" onclick="switchTab('users')">👥 创作者管理</button>
   </div>
 </div>
 
@@ -61,6 +63,7 @@
 </div>
 
 <div class="max-w-7xl mx-auto px-4 py-6">
+  <!-- 任务管理 -->
   <div id="tab-tasks">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-lg font-bold text-gray-800">任务列表</h2>
@@ -76,6 +79,7 @@
     </div>
   </div>
 
+  <!-- 返链审核 -->
   <div id="tab-contents" class="hidden">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-lg font-bold text-gray-800">返链审核</h2>
@@ -92,6 +96,24 @@
           <tr><th class="px-4 py-3 text-left">任务</th><th class="px-4 py-3 text-left">昵称</th><th class="px-4 py-3 text-left">主页</th><th class="px-4 py-3 text-left">笔记链接</th><th class="px-4 py-3 text-left">提交时间</th><th class="px-4 py-3 text-center">状态</th><th class="px-4 py-3 text-center">操作</th></tr>
         </thead>
         <tbody id="contentTableBody"><tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">加载中...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 创作者管理 -->
+  <div id="tab-users" class="hidden">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold text-gray-800">创作者列表</h2>
+      <div class="flex gap-2 items-center">
+        <input type="text" id="userSearch" placeholder="搜索用户名..." class="!py-1.5 !px-3 text-sm !w-48" oninput="renderUsers()" />
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500">
+          <tr><th class="px-4 py-3 text-left">用户名</th><th class="px-4 py-3 text-left">密码</th><th class="px-4 py-3 text-center">报名数</th><th class="px-4 py-3 text-left">注册时间</th><th class="px-4 py-3 text-center">操作</th></tr>
+        </thead>
+        <tbody id="userTableBody"><tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">加载中...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -126,7 +148,7 @@
     <input type="hidden" id="t_editId" value="" />
     <div class="flex gap-3 mt-5">
       <button class="btn-secondary flex-1" onclick="closeTaskModal()">取消</button>
-      <button class="btn-primary flex-1" onclick="saveTask()"> 发布</button>
+      <button class="btn-primary flex-1" onclick="saveTask()">发布</button>
     </div>
   </div>
 </div>
@@ -140,17 +162,32 @@
   </div>
 </div>
 
+<!-- Reset Password Modal -->
+<div id="resetPwdModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 w-[400px] shadow-xl">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">🔑 重置密码</h3>
+    <p class="text-sm text-gray-500 mb-3">用户：<b id="resetPwdUser"></b></p>
+    <div class="mb-4">
+      <label class="block text-xs font-semibold text-gray-500 mb-1">新密码</label>
+      <input type="text" id="resetPwdInput" placeholder="输入新密码（至少6位）" />
+    </div>
+    <div class="flex gap-3">
+      <button class="btn-secondary flex-1" onclick="closeModal('resetPwdModal')">取消</button>
+      <button class="btn-primary flex-1" onclick="doResetPwd()">确认重置</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
 
 <script>
 const ADMIN_PWD = 'xhsrj2026';
 if (sessionStorage.getItem('admin_unlocked') !== '1') { window.location.href = 'index.html'; }
 
-let db = { tasks: [], signups: [], _version: 0 };
-let loading = false;
+let db = { tasks: [], signups: [], users: [], _version: 0 };
 
-function showLoading() { loading = true; document.getElementById('loadingOverlay').classList.remove('hidden'); }
-function hideLoading() { loading = false; document.getElementById('loadingOverlay').classList.add('hidden'); }
+function showLoading() { document.getElementById('loadingOverlay').classList.remove('hidden'); }
+function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
 
 async function loadData() {
   showLoading();
@@ -158,6 +195,7 @@ async function loadData() {
     const data = await getDB();
     db.tasks = data.tasks || [];
     db.signups = data.signups || [];
+    db.users = data.users || [];
     db._version = data._version || 0;
   } catch (e) {
     showToast('加载数据失败: ' + e.message);
@@ -174,6 +212,11 @@ function switchTab(tab) {
   document.querySelectorAll('[data-tab]').forEach(el => { el.classList.remove('tab-active'); el.classList.add('text-gray-500'); });
   const btn = document.querySelector(`[data-tab="${tab}"]`);
   btn.classList.add('tab-active'); btn.classList.remove('text-gray-500');
+}
+
+// ---- 解码密码 ----
+function decodePwd(encoded) {
+  try { return atob(encoded); } catch { return encoded; }
 }
 
 // ---- Tasks ----
@@ -348,7 +391,6 @@ function exportSelected() {
   let list = db.signups;
   if (tf) list = list.filter(s => s.taskId === tf);
   if (!list.length) { showToast('没有可导出的数据'); return; }
-
   const taskName = tf ? (db.tasks.find(t => t.id === tf)?.name || '未知任务') : '全部任务';
   let csv = '任务,昵称,主页,笔记链接,状态,提交时间\n';
   list.forEach(s => {
@@ -363,11 +405,66 @@ function exportSelected() {
   showToast(`已导出 ${list.length} 条记录 📋`);
 }
 
+// ---- Users ----
+let resetPwdTarget = '';
+function renderUsers() {
+  const keyword = (document.getElementById('userSearch')?.value || '').toLowerCase();
+  const tbody = document.getElementById('userTableBody');
+  let users = db.users || [];
+  if (keyword) users = users.filter(u => u.username.toLowerCase().includes(keyword));
+  users.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无创作者</td></tr>'; return; }
+  tbody.innerHTML = users.map(u => {
+    const pwd = decodePwd(u.password);
+    const cnt = db.signups.filter(s => s.creatorUsername === u.username).length;
+    const regTime = u.createdAt ? new Date(u.createdAt).toLocaleString('zh-CN') : '-';
+    return `<tr class="border-t border-gray-50 hover:bg-gray-50">
+      <td class="px-4 py-3 font-medium">${esc(u.username)}</td>
+      <td class="px-4 py-3">
+        <span class="font-mono bg-gray-100 px-2 py-1 rounded text-xs">${esc(pwd)}</span>
+        <span class="copy-btn" onclick="copyText('${esc(pwd)}')">复制</span>
+      </td>
+      <td class="px-4 py-3 text-center">${cnt}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs">${regTime}</td>
+      <td class="px-4 py-3 text-center">
+        <button class="btn-secondary btn-sm" onclick="showResetPwd('${esc(u.username)}')">重置密码</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function showResetPwd(username) {
+  resetPwdTarget = username;
+  document.getElementById('resetPwdUser').textContent = username;
+  document.getElementById('resetPwdInput').value = '';
+  document.getElementById('resetPwdModal').classList.remove('hidden');
+}
+
+async function doResetPwd() {
+  const newPwd = document.getElementById('resetPwdInput').value.trim();
+  if (!newPwd || newPwd.length < 6) { showToast('密码至少6位'); return; }
+  showLoading();
+  try {
+    await resetUserPassword(resetPwdTarget, newPwd);
+    closeModal('resetPwdModal');
+    showToast(`用户 ${resetPwdTarget} 密码已重置 ✅`);
+    await loadData();
+  } catch (e) {
+    showToast('重置失败: ' + e.message);
+    hideLoading();
+  }
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('已复制: ' + text));
+}
+
 function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = '1'; setTimeout(() => { t.style.opacity = '0'; }, 2500); }
 
-function refreshAll() { renderTasks(); populateFilters(); populateExportFilter(); renderContents(); }
+function refreshAll() { renderTasks(); populateFilters(); populateExportFilter(); renderContents(); renderUsers(); }
 loadData();
 </script>
 </body>
