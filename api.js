@@ -13,41 +13,50 @@ async function apiCall(action, data = {}) {
   return json.data;
 }
 
-// Get all data (tasks + signups)
+// Get all data
 async function getDB() {
   try {
     return await apiCall('get');
   } catch (e) {
-    return { tasks: [], signups: [], _version: 0 };
+    return { tasks: [], signups: [], users: [], _version: 0 };
   }
 }
 
-// Save all data (full state replacement - for admin)
+// User: register
+async function registerUser(username, password) {
+  return apiCall('register', { username, password });
+}
+
+// User: login
+async function loginUser(username, password) {
+  return apiCall('login', { username, password });
+}
+
+// Save all data
 async function saveAll(tasks, signups) {
   return apiCall('saveAll', { tasks, signups });
 }
 
-// Create a new task
+// Task CRUD
 async function createTask(task) {
   return apiCall('create', { type: 'task', value: task });
 }
-
-// Update a task
 async function updateTask(task) {
   return apiCall('update', { type: 'task', value: task });
 }
-
-// Delete a task
 async function deleteTask(id) {
   return apiCall('delete', { type: 'task', id });
 }
 
-// Create a signup
+// Signup CRUD
 async function createSignup(signup) {
   return apiCall('create', { type: 'signup', value: signup });
 }
-
-// Update a signup (e.g., change status)
 async function updateSignup(signup) {
   return apiCall('update', { type: 'signup', value: signup });
+}
+
+// User: reset password (admin)
+async function resetUserPassword(username, newPassword) {
+  return apiCall('update', { type: 'user', subAction: 'resetPassword', value: { username, password: newPassword } });
 }
