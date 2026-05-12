@@ -77,15 +77,6 @@
 
 <script>
 const ADMIN_PWD = 'xhsrj2026';
-const DB_KEY = 'd5_creator_platform_v1';
-
-// Seed demo
-(function(){
-  const raw = localStorage.getItem(DB_KEY);
-  if(raw){ const db=JSON.parse(raw); if(db.tasks&&db.tasks.length) return; }
-  const d={tasks:[],signups:[],_version:0};
-  localStorage.setItem(DB_KEY,JSON.stringify(d));
-})();
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(()=>{t.style.opacity='0';},2500);}
 function closeModal(id){document.getElementById(id).classList.add('hidden');}
