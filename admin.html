@@ -30,11 +30,11 @@
   .badge-rejected { background:#fee2e2;color:#991b1b; }
   .badge-active { background:#dbeafe;color:#1e40af; }
   .badge-ended { background:#e5e7eb;color:#6b7280; }
+  .loading { opacity:0.5;pointer-events:none; }
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
-<!-- Header -->
 <div class="bg-white shadow-sm sticky top-0 z-40">
   <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
     <div class="flex items-center gap-3">
@@ -46,7 +46,6 @@
   </div>
 </div>
 
-<!-- Tabs -->
 <div class="bg-white border-b">
   <div class="max-w-7xl mx-auto px-4 flex gap-6">
     <button class="py-3 text-sm tab-active" data-tab="tasks" onclick="switchTab('tasks')">📋 任务管理</button>
@@ -54,10 +53,11 @@
   </div>
 </div>
 
-<!-- Content -->
-<div class="max-w-7xl mx-auto px-4 py-6">
+<div id="loadingOverlay" class="fixed inset-0 bg-white bg-opacity-70 flex items-center justify-center z-50 hidden">
+  <div class="text-lg text-gray-600">加载中...</div>
+</div>
 
-  <!-- Tasks Tab -->
+<div class="max-w-7xl mx-auto px-4 py-6">
   <div id="tab-tasks">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-lg font-bold text-gray-800">任务列表</h2>
@@ -66,51 +66,29 @@
     <div class="bg-white rounded-2xl shadow overflow-hidden">
       <table class="w-full text-sm">
         <thead class="bg-gray-50 text-gray-500">
-          <tr>
-            <th class="px-4 py-3 text-left">任务名称</th>
-            <th class="px-4 py-3 text-center">报名数</th>
-            <th class="px-4 py-3 text-left">截止</th>
-            <th class="px-4 py-3 text-center">状态</th>
-            <th class="px-4 py-3 text-center">操作</th>
-          </tr>
+          <tr><th class="px-4 py-3 text-left">任务名称</th><th class="px-4 py-3 text-center">报名数</th><th class="px-4 py-3 text-left">截止</th><th class="px-4 py-3 text-center">状态</th><th class="px-4 py-3 text-center">操作</th></tr>
         </thead>
-        <tbody id="taskTableBody">
-          <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无任务</td></tr>
-        </tbody>
+        <tbody id="taskTableBody"><tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">加载中...</td></tr></tbody>
       </table>
     </div>
   </div>
 
-  <!-- Contents Tab -->
   <div id="tab-contents" class="hidden">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-lg font-bold text-gray-800">返链审核</h2>
       <div class="flex gap-2">
         <select id="contentTaskFilter" class="!py-2 !px-3 text-sm" onchange="renderContents()"><option value="">全部任务</option></select>
         <select id="contentStatusFilter" class="!py-2 !px-3 text-sm" onchange="renderContents()">
-          <option value="">全部状态</option>
-          <option value="pending">待审核</option>
-          <option value="approved">已通过</option>
-          <option value="rejected">已拒绝</option>
+          <option value="">全部状态</option><option value="pending">待审核</option><option value="approved">已通过</option><option value="rejected">已拒绝</option>
         </select>
       </div>
     </div>
     <div class="bg-white rounded-2xl shadow overflow-hidden">
       <table class="w-full text-sm">
         <thead class="bg-gray-50 text-gray-500">
-          <tr>
-            <th class="px-4 py-3 text-left">任务</th>
-            <th class="px-4 py-3 text-left">昵称</th>
-            <th class="px-4 py-3 text-left">主页</th>
-            <th class="px-4 py-3 text-left">笔记链接</th>
-            <th class="px-4 py-3 text-left">提交时间</th>
-            <th class="px-4 py-3 text-center">状态</th>
-            <th class="px-4 py-3 text-center">操作</th>
-          </tr>
+          <tr><th class="px-4 py-3 text-left">任务</th><th class="px-4 py-3 text-left">昵称</th><th class="px-4 py-3 text-left">主页</th><th class="px-4 py-3 text-left">笔记链接</th><th class="px-4 py-3 text-left">提交时间</th><th class="px-4 py-3 text-center">状态</th><th class="px-4 py-3 text-center">操作</th></tr>
         </thead>
-        <tbody id="contentTableBody">
-          <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无返链</td></tr>
-        </tbody>
+        <tbody id="contentTableBody"><tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">加载中...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -145,7 +123,7 @@
     <input type="hidden" id="t_editId" value="" />
     <div class="flex gap-3 mt-5">
       <button class="btn-secondary flex-1" onclick="closeTaskModal()">取消</button>
-      <button class="btn-primary flex-1" onclick="saveTask()">🚀 发布</button>
+      <button class="btn-primary flex-1" onclick="saveTask()"> 发布</button>
     </div>
   </div>
 </div>
@@ -159,179 +137,235 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
 
 <script>
 const ADMIN_PWD = 'xhsrj2026';
-const DB_KEY = 'd5_creator_platform_v1';
+if (sessionStorage.getItem('admin_unlocked') !== '1') { window.location.href = 'index.html'; }
 
-if(sessionStorage.getItem('admin_unlocked')!=='1'){window.location.href='index.html';}
+let db = { tasks: [], signups: [], _version: 0 };
+let loading = false;
 
-let db = {tasks:[],signups:[],_version:0};
+function showLoading() { loading = true; document.getElementById('loadingOverlay').classList.remove('hidden'); }
+function hideLoading() { loading = false; document.getElementById('loadingOverlay').classList.add('hidden'); }
 
-function loadDB(){
-  const raw=localStorage.getItem(DB_KEY);
-  if(raw){db=JSON.parse(raw);if(!db.signups)db.signups=[];if(!db.tasks)db.tasks=[];}
-  db.signups=(db.signups||[]).map(s=>({...s,status:s.status||'pending',contentStatus:s.contentStatus||'pending'}));
-  saveDB();
+async function loadData() {
+  showLoading();
+  try {
+    const data = await getDB();
+    db.tasks = data.tasks || [];
+    db.signups = data.signups || [];
+    db._version = data._version || 0;
+  } catch (e) {
+    showToast('加载数据失败: ' + e.message);
+  }
+  hideLoading();
+  refreshAll();
 }
-function saveDB(){db._version=(db._version||0)+1;localStorage.setItem(DB_KEY,JSON.stringify(db));refreshAll();}
-function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 
-function switchTab(tab){
-  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hidden'));
-  document.getElementById('tab-'+tab).classList.remove('hidden');
-  document.querySelectorAll('[data-tab]').forEach(el=>{el.classList.remove('tab-active');el.classList.add('text-gray-500');});
-  const btn=document.querySelector(`[data-tab="${tab}"]`);
-  btn.classList.add('tab-active');btn.classList.remove('text-gray-500');
+async function saveData() {
+  showLoading();
+  try {
+    // For now, we push full state updates via individual KV ops
+    // The backend handles merging
+    await updateDB(db);
+  } catch (e) {
+    showToast('保存失败: ' + e.message);
+  }
+  hideLoading();
+}
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+function switchTab(tab) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+  document.querySelectorAll('[data-tab]').forEach(el => { el.classList.remove('tab-active'); el.classList.add('text-gray-500'); });
+  const btn = document.querySelector(`[data-tab="${tab}"]`);
+  btn.classList.add('tab-active'); btn.classList.remove('text-gray-500');
 }
 
 // ---- Tasks ----
-function showTaskModal(editId){
+function showTaskModal(editId) {
   document.getElementById('taskModal').classList.remove('hidden');
-  if(editId){
-    const t=db.tasks.find(x=>x.id===editId);if(!t)return;
-    document.getElementById('taskModalTitle').textContent='✏️ 编辑任务';
-    document.getElementById('t_editId').value=editId;
-    document.getElementById('t_name').value=t.name||'';
-    document.getElementById('t_reward').value=t.reward||'';
-    document.getElementById('t_desc').value=t.desc||'';
-    document.getElementById('t_req').value=t.req||'';
-    document.getElementById('t_launchDate').value=t.launchDate||'';
-    document.getElementById('t_deadline').value=t.deadline||'';
-    document.getElementById('t_maxSignup').value=t.maxSignup||'';
-    document.getElementById('t_status').value=t.status||'active';
-  }else{
-    document.getElementById('taskModalTitle').textContent='📝 发布推广任务';
-    document.getElementById('t_editId').value='';
-    ['t_name','t_reward','t_desc','t_req','t_launchDate','t_deadline'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('t_maxSignup').value='';
-    document.getElementById('t_status').value='active';
+  if (editId) {
+    const t = db.tasks.find(x => x.id === editId); if (!t) return;
+    document.getElementById('taskModalTitle').textContent = '✏️ 编辑任务';
+    document.getElementById('t_editId').value = editId;
+    document.getElementById('t_name').value = t.name || '';
+    document.getElementById('t_reward').value = t.reward || '';
+    document.getElementById('t_desc').value = t.desc || '';
+    document.getElementById('t_req').value = t.req || '';
+    document.getElementById('t_launchDate').value = t.launchDate || '';
+    document.getElementById('t_deadline').value = t.deadline || '';
+    document.getElementById('t_maxSignup').value = t.maxSignup || '';
+    document.getElementById('t_status').value = t.status || 'active';
+  } else {
+    document.getElementById('taskModalTitle').textContent = '📝 发布推广任务';
+    document.getElementById('t_editId').value = '';
+    ['t_name','t_reward','t_desc','t_req','t_launchDate','t_deadline'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('t_maxSignup').value = '';
+    document.getElementById('t_status').value = 'active';
   }
 }
-function closeTaskModal(){document.getElementById('taskModal').classList.add('hidden');}
+function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
 
-function saveTask(){
-  const name=document.getElementById('t_name').value.trim();
-  const deadline=document.getElementById('t_deadline').value.trim();
-  if(!name){showToast('请填写任务名称');return;}
-  if(!deadline){showToast('请填写截止日期');return;}
-  const editId=document.getElementById('t_editId').value;
-  const data={name,reward:document.getElementById('t_reward').value.trim(),desc:document.getElementById('t_desc').value.trim(),req:document.getElementById('t_req').value.trim(),launchDate:document.getElementById('t_launchDate').value.trim(),deadline,maxSignup:document.getElementById('t_maxSignup').value,status:document.getElementById('t_status').value};
-  if(editId){const idx=db.tasks.findIndex(x=>x.id===editId);if(idx>=0)Object.assign(db.tasks[idx],data);}
-  else{data.id=genId();data.createdAt=Date.now();db.tasks.push(data);}
-  saveDB();closeTaskModal();
-  showToast(editId?'任务已更新 ✅':'任务已发布 ');
+async function saveTask() {
+  const name = document.getElementById('t_name').value.trim();
+  const deadline = document.getElementById('t_deadline').value.trim();
+  if (!name) { showToast('请填写任务名称'); return; }
+  if (!deadline) { showToast('请填写截止日期'); return; }
+  const editId = document.getElementById('t_editId').value;
+  const data = {
+    name,
+    reward: document.getElementById('t_reward').value.trim(),
+    desc: document.getElementById('t_desc').value.trim(),
+    req: document.getElementById('t_req').value.trim(),
+    launchDate: document.getElementById('t_launchDate').value.trim(),
+    deadline,
+    maxSignup: document.getElementById('t_maxSignup').value,
+    status: document.getElementById('t_status').value,
+  };
+  showLoading();
+  try {
+    if (editId) {
+      data.id = editId;
+      await updateTask(data);
+    } else {
+      data.id = genId();
+      data.createdAt = Date.now();
+      await createTask(data);
+    }
+    closeTaskModal();
+    showToast(editId ? '任务已更新 ✅' : '任务已发布 🚀');
+    await loadData();
+  } catch (e) {
+    showToast('操作失败: ' + e.message);
+    hideLoading();
+  }
 }
 
-function deleteTask(id){
-  if(!confirm('确定删除？关联数据也会被删除。'))return;
-  db.tasks=db.tasks.filter(x=>x.id!==id);db.signups=db.signups.filter(x=>x.taskId!==id);saveDB();
-  showToast('任务已删除');
+async function handleDeleteTask(id) {
+  if (!confirm('确定删除？关联数据也会被删除。')) return;
+  showLoading();
+  try {
+    await deleteTask(id);
+    showToast('任务已删除');
+    await loadData();
+  } catch (e) {
+    showToast('删除失败: ' + e.message);
+    hideLoading();
+  }
 }
 
-function renderTasks(){
-  const tbody=document.getElementById('taskTableBody');
-  if(!db.tasks.length){tbody.innerHTML='<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无任务</td></tr>';return;}
-  tbody.innerHTML=db.tasks.map(t=>{
-    const cnt=db.signups.filter(s=>s.taskId===t.id).length;
-    const badge=t.status==='active'?'<span class="status-badge badge-active">进行中</span>':'<span class="status-badge badge-ended">已结束</span>';
+function renderTasks() {
+  const tbody = document.getElementById('taskTableBody');
+  if (!db.tasks.length) { tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无任务</td></tr>'; return; }
+  tbody.innerHTML = db.tasks.map(t => {
+    const cnt = db.signups.filter(s => s.taskId === t.id).length;
+    const badge = t.status === 'active' ? '<span class="status-badge badge-active">进行中</span>' : '<span class="status-badge badge-ended">已结束</span>';
     return `<tr class="border-t border-gray-50 hover:bg-gray-50">
       <td class="px-4 py-3 font-medium">${esc(t.name)}</td>
       <td class="px-4 py-3 text-center">${cnt}</td>
-      <td class="px-4 py-3 text-gray-500">${t.deadline||'-'}</td>
+      <td class="px-4 py-3 text-gray-500">${t.deadline || '-'}</td>
       <td class="px-4 py-3 text-center">${badge}</td>
       <td class="px-4 py-3 text-center">
         <button class="btn-secondary btn-sm mr-1" onclick="showTaskModal('${t.id}')">编辑</button>
-        <button class="btn-danger btn-sm" onclick="deleteTask('${t.id}')">删除</button>
+        <button class="btn-danger btn-sm" onclick="handleDeleteTask('${t.id}')">删除</button>
       </td>
     </tr>`;
   }).join('');
 }
 
 // ---- Contents ----
-function renderContents(){
-  const tf=document.getElementById('contentTaskFilter').value;
-  const sf=document.getElementById('contentStatusFilter').value;
-  let list=db.signups.filter(s=>s.contentLink);
-  if(tf)list=list.filter(s=>s.taskId===tf);
-  if(sf)list=list.filter(s=>s.contentStatus===sf);
-  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+function renderContents() {
+  const tf = document.getElementById('contentTaskFilter').value;
+  const sf = document.getElementById('contentStatusFilter').value;
+  let list = db.signups.filter(s => s.contentLink);
+  if (tf) list = list.filter(s => s.taskId === tf);
+  if (sf) list = list.filter(s => s.contentStatus === sf);
+  list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-  const tbody=document.getElementById('contentTableBody');
-  if(!list.length){tbody.innerHTML='<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无返链</td></tr>';return;}
-  tbody.innerHTML=list.map(s=>{
-    const badge=s.contentStatus==='pending'?'<span class="status-badge badge-pending">待审核</span>'
-      :s.contentStatus==='approved'?'<span class="status-badge badge-approved">已通过</span>'
-      :'<span class="status-badge badge-rejected">已拒绝</span>';
+  const tbody = document.getElementById('contentTableBody');
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无返链</td></tr>'; return; }
+  tbody.innerHTML = list.map(s => {
+    const badge = s.contentStatus === 'pending' ? '<span class="status-badge badge-pending">待审核</span>'
+      : s.contentStatus === 'approved' ? '<span class="status-badge badge-approved">已通过</span>'
+      : '<span class="status-badge badge-rejected">已拒绝</span>';
     return `<tr class="border-t border-gray-50 hover:bg-gray-50">
-      <td class="px-4 py-3 font-medium">${esc(s.taskName||'-')}</td>
+      <td class="px-4 py-3 font-medium">${esc(s.taskName || '-')}</td>
       <td class="px-4 py-3">${esc(s.creatorName)}</td>
-      <td class="px-4 py-3"><a href="${esc(s.creatorProfile||'#')}" target="_blank" class="text-purple-600 hover:underline text-xs">查看</a></td>
+      <td class="px-4 py-3"><a href="${esc(s.creatorProfile || '#')}" target="_blank" class="text-purple-600 hover:underline text-xs">查看</a></td>
       <td class="px-4 py-3"><a href="${esc(s.contentLink)}" target="_blank" class="text-purple-600 hover:underline text-xs break-all">${esc(s.contentLink)}</a></td>
-      <td class="px-4 py-3 text-gray-500">${s.createdAt?new Date(s.createdAt).toLocaleDateString('zh-CN'):'-'}</td>
+      <td class="px-4 py-3 text-gray-500">${s.createdAt ? new Date(s.createdAt).toLocaleDateString('zh-CN') : '-'}</td>
       <td class="px-4 py-3 text-center">${badge}</td>
       <td class="px-4 py-3 text-center">
-        ${s.contentStatus==='pending'?`
+        ${s.contentStatus === 'pending' ? `
           <button class="btn-success btn-sm mr-1" onclick="reviewContent('${s.id}','approved')">✅</button>
           <button class="btn-danger btn-sm" onclick="reviewContent('${s.id}','rejected')">❌</button>
-        `:`<button class="btn-secondary btn-sm" onclick="viewDetail('${s.id}')">查看</button>`}
+        ` : `<button class="btn-secondary btn-sm" onclick="viewDetail('${s.id}')">查看</button>`}
       </td>
     </tr>`;
   }).join('');
 }
 
-function reviewContent(id,status){
-  const s=db.signups.find(x=>x.id===id);if(!s)return;
-  s.contentStatus=status;saveDB();
-  showToast(status==='approved'?'已通过 ✅':'已拒绝 ❌');
+async function reviewContent(id, status) {
+  const s = db.signups.find(x => x.id === id); if (!s) return;
+  s.contentStatus = status;
+  showLoading();
+  try {
+    await updateSignup(s);
+    showToast(status === 'approved' ? '已通过 ✅' : '已拒绝 ❌');
+    await loadData();
+  } catch (e) {
+    showToast('操作失败: ' + e.message);
+    hideLoading();
+  }
 }
 
-function viewDetail(id){
-  const s=db.signups.find(x=>x.id===id);if(!s)return;
-  document.getElementById('detailContent').innerHTML=`
-    <p><b>任务：</b>${esc(s.taskName||'-')}</p>
+function viewDetail(id) {
+  const s = db.signups.find(x => x.id === id); if (!s) return;
+  document.getElementById('detailContent').innerHTML = `
+    <p><b>任务：</b>${esc(s.taskName || '-')}</p>
     <p><b>昵称：</b>${esc(s.creatorName)}</p>
-    <p><b>主页：</b><a href="${esc(s.creatorProfile||'#')}" target="_blank" class="text-purple-600 hover:underline">${esc(s.creatorProfile||'-')}</a></p>
+    <p><b>主页：</b><a href="${esc(s.creatorProfile || '#')}" target="_blank" class="text-purple-600 hover:underline">${esc(s.creatorProfile || '-')}</a></p>
     <p><b>笔记链接：</b><a href="${esc(s.contentLink)}" target="_blank" class="text-purple-600 hover:underline">${esc(s.contentLink)}</a></p>
-    <p><b>状态：</b>${s.contentStatus==='approved'?'✅ 已通过':s.contentStatus==='rejected'?'❌ 已拒绝':'⏳ 待审核'}</p>
+    <p><b>状态：</b>${s.contentStatus === 'approved' ? '✅ 已通过' : s.contentStatus === 'rejected' ? '❌ 已拒绝' : '⏳ 待审核'}</p>
   `;
-  document.getElementById('detailActionBtns').innerHTML=`
+  document.getElementById('detailActionBtns').innerHTML = `
     <button class="btn-secondary flex-1" onclick="closeModal('viewDetailModal')">关闭</button>
-    ${s.contentStatus==='pending'?`<button class="btn-success flex-1" onclick="reviewContent('${s.id}','approved');closeModal('viewDetailModal')">通过</button>
-    <button class="btn-danger flex-1" onclick="reviewContent('${s.id}','rejected');closeModal('viewDetailModal')">拒绝</button>`:''}
+    ${s.contentStatus === 'pending' ? `<button class="btn-success flex-1" onclick="reviewContent('${s.id}','approved');closeModal('viewDetailModal')">通过</button>
+    <button class="btn-danger flex-1" onclick="reviewContent('${s.id}','rejected');closeModal('viewDetailModal')">拒绝</button>` : ''}
   `;
   document.getElementById('viewDetailModal').classList.remove('hidden');
 }
 
-function populateFilters(){
-  const sel=document.getElementById('contentTaskFilter');const cur=sel.value;
-  sel.innerHTML='<option value="">全部任务</option>';
-  db.tasks.forEach(t=>{sel.innerHTML+=`<option value="${t.id}" ${t.id===cur?'selected':''}>${esc(t.name)}</option>`;});
+function populateFilters() {
+  const sel = document.getElementById('contentTaskFilter'); const cur = sel.value;
+  sel.innerHTML = '<option value="">全部任务</option>';
+  db.tasks.forEach(t => { sel.innerHTML += `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.name)}</option>`; });
 }
 
-// ---- Export ----
-function exportAll(){
-  let csv='任务,昵称,主页,笔记链接,状态,提交时间\n';
-  db.signups.forEach(s=>{
-    csv+=[`"${s.taskName||''}"`,`"${s.creatorName||''}"`,`"${s.creatorProfile||''}"`,`"${s.contentLink||''}"`,
-      s.contentStatus==='approved'?'通过':s.contentStatus==='rejected'?'拒绝':'待审核',
-      s.createdAt?new Date(s.createdAt).toLocaleString('zh-CN'):''
-    ].join(',')+'\n';
+function exportAll() {
+  let csv = '任务,昵称,主页,笔记链接,状态,提交时间\n';
+  db.signups.forEach(s => {
+    csv += [`"${s.taskName || ''}"`, `"${s.creatorName || ''}"`, `"${s.creatorProfile || ''}"`, `"${s.contentLink || ''}"`,
+      s.contentStatus === 'approved' ? '通过' : s.contentStatus === 'rejected' ? '拒绝' : '待审核',
+      s.createdAt ? new Date(s.createdAt).toLocaleString('zh-CN') : ''
+    ].join(',') + '\n';
   });
-  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`约稿数据_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `约稿数据_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   showToast('报表已导出 ');
 }
 
-function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
-function closeModal(id){document.getElementById(id).classList.add('hidden');}
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(()=>{t.style.opacity='0';},2500);}
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = '1'; setTimeout(() => { t.style.opacity = '0'; }, 2500); }
 
-function refreshAll(){renderTasks();populateFilters();renderContents();}
-loadDB();refreshAll();
+function refreshAll() { renderTasks(); populateFilters(); renderContents(); }
+loadData();
 </script>
 </body>
 </html>
