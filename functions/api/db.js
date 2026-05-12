@@ -1,96 +1,135 @@
 /**
  * Cloudflare Pages Function — /api/db
- * 替代原 workers.dev Worker，走 pages.dev 域名，国内直连。
- * KV binding: GAME_PROMO_DB (id: 81370c22ec4b4e56b57d92f89eeae1f5)
+ * KV binding: DB_KV → d5-creator-db
  */
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const AUTH_TOKEN = 'xhs-game-promo-2026';
+const AUTH_TOKEN = 'd5-creator-2026';
+
+async function getDB(env) {
+  const raw = await env.DB_KV.get('db');
+  if (!raw) return { tasks: [], signups: [], _version: 0 };
+  try { return JSON.parse(raw); } catch { return { tasks: [], signups: [], _version: 0 }; }
+}
+
+async function saveDB(env, data) {
+  data._version = (data._version || 0) + 1;
+  await env.DB_KV.put('db', JSON.stringify(data));
+  return data;
+}
 
 export async function onRequest(context) {
   const { request, env } = context;
 
-  // CORS preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: CORS_HEADERS });
   }
 
-  // GET — 读取数据库
+  // GET — 读取所有数据
   if (request.method === 'GET') {
-    const data = await env.GAME_PROMO_DB.get('db');
-    if (!data) {
-      return new Response(
-        JSON.stringify({ tasks: [], signups: [], contents: [], cdkPools: {}, pendingActions: [], _version: 0 }),
-        { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
-      );
-    }
-    return new Response(data, {
+    const data = await getDB(env);
+    return new Response(JSON.stringify(data), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
     });
   }
 
-  // POST /api/db?action=clean — 清理 contents 中的 base64 字段（一次性操作）
+  // POST — 各种操作
   if (request.method === 'POST') {
-    const token = request.headers.get('X-Auth-Token');
-    if (token !== AUTH_TOKEN) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    let body;
+    try { body = await request.json(); } catch {
+      return new Response(JSON.stringify({ ok: false, error: 'Invalid JSON' }), {
+        status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
       });
     }
-    const url = new URL(request.url);
-    if (url.searchParams.get('action') === 'clean') {
-      const raw = await env.GAME_PROMO_DB.get('db');
-      const db = raw ? JSON.parse(raw) : {};
-      let cleaned = 0;
-      (db.contents || []).forEach(c => {
-        if (c.liveshotBase64) { c.liveshotUrl = c.liveshotUrl || ''; delete c.liveshotBase64; cleaned++; }
-        if (c.datashotBase64) { c.datashotUrl = c.datashotUrl || ''; delete c.datashotBase64; cleaned++; }
-      });
-      await env.GAME_PROMO_DB.put('db', JSON.stringify(db));
-      return new Response(JSON.stringify({ success: true, cleanedFields: cleaned }), {
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-      });
-    }
-    // 普通 POST — 写入数据库（兼容旧逻辑）
-    const body = await request.text();
-    try { JSON.parse(body); } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-        status: 400,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-      });
-    }
-    await env.GAME_PROMO_DB.put('db', body);
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-    });
-  }
 
-  // PUT — 写入数据库
-  if (request.method === 'PUT') {
-    const token = request.headers.get('X-Auth-Token');
-    if (token !== AUTH_TOKEN) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    if (body.token !== AUTH_TOKEN) {
+      return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
+        status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
       });
     }
-    const body = await request.text();
-    try { JSON.parse(body); } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-        status: 400,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+
+    const db = await getDB(env);
+    const action = body.action;
+
+    try {
+      switch (action) {
+        case 'get': {
+          return new Response(JSON.stringify({ ok: true, data: db }), {
+            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+          });
+        }
+
+        case 'create': {
+          const { type, value } = body;
+          if (!value.id) value.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+          if (!value.createdAt) value.createdAt = Date.now();
+          if (type === 'task') {
+            db.tasks = db.tasks.filter(t => t.id !== value.id);
+            db.tasks.push(value);
+          } else if (type === 'signup') {
+            db.signups = db.signups.filter(s => s.id !== value.id);
+            db.signups.push(value);
+          }
+          const saved = await saveDB(env, db);
+          return new Response(JSON.stringify({ ok: true, data: saved }), {
+            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+          });
+        }
+
+        case 'update': {
+          const { type, value } = body;
+          if (type === 'task') {
+            const idx = db.tasks.findIndex(t => t.id === value.id);
+            if (idx >= 0) Object.assign(db.tasks[idx], value);
+          } else if (type === 'signup') {
+            const idx = db.signups.findIndex(s => s.id === value.id);
+            if (idx >= 0) Object.assign(db.signups[idx], value);
+          }
+          const saved = await saveDB(env, db);
+          return new Response(JSON.stringify({ ok: true, data: saved }), {
+            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+          });
+        }
+
+        case 'delete': {
+          const { type, id } = body;
+          if (type === 'task') {
+            db.tasks = db.tasks.filter(t => t.id !== id);
+            db.signups = db.signups.filter(s => s.taskId !== id);
+          } else if (type === 'signup') {
+            db.signups = db.signups.filter(s => s.id !== id);
+          }
+          const saved = await saveDB(env, db);
+          return new Response(JSON.stringify({ ok: true, data: saved }), {
+            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+          });
+        }
+
+        case 'saveAll': {
+          const { tasks, signups } = body;
+          db.tasks = tasks || [];
+          db.signups = signups || [];
+          const saved = await saveDB(env, db);
+          return new Response(JSON.stringify({ ok: true, data: saved }), {
+            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+          });
+        }
+
+        default:
+          return new Response(JSON.stringify({ ok: false, error: 'Unknown action: ' + action }), {
+            status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+          });
+      }
+    } catch (e) {
+      return new Response(JSON.stringify({ ok: false, error: e.message }), {
+        status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
       });
     }
-    await env.GAME_PROMO_DB.put('db', body);
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-    });
   }
 
   return new Response('Not found', { status: 404, headers: CORS_HEADERS });
