@@ -44,7 +44,7 @@
 
 <div class="bg-white border-b">
   <div class="max-w-4xl mx-auto px-4 flex gap-6">
-    <button class="py-3 text-sm tab-active" data-tab="tasks" onclick="switchTab('tasks')">🎮 浏览任务</button>
+    <button class="py-3 text-sm tab-active" data-tab="tasks" onclick="switchTab('tasks')"> 浏览任务</button>
     <button class="py-3 text-sm text-gray-500 hover:text-gray-700" data-tab="mysignups" onclick="switchTab('mysignups')">📋 我的参与</button>
   </div>
 </div>
@@ -124,13 +124,22 @@ function renderTasks() {
   const container = document.getElementById('taskList');
   const active = db.tasks.filter(t => t.status === 'active');
   if (!active.length) {
-    container.innerHTML = '<div class="text-center py-16 text-gray-400"><div class="text-4xl mb-3">🎮</div><p>暂无进行中的任务</p></div>';
+    container.innerHTML = '<div class="text-center py-16 text-gray-400"><div class="text-4xl mb-3"></div><p>暂无进行中的任务</p></div>';
     return;
   }
   container.innerHTML = active.map(t => {
     const cnt = db.signups.filter(s => s.taskId === t.id).length;
     const maxLabel = t.maxSignup ? `${cnt}/${t.maxSignup}` : `${cnt}`;
-    const mySignup = db.signups.find(s => s.taskId === t.id && s.creatorId === creatorId);
+    const mySignups = db.signups.filter(s => s.taskId === t.id && s.creatorId === creatorId);
+    const submitted = mySignups.filter(s => s.contentLink);
+    const latest = submitted.length ? submitted[submitted.length - 1] : null;
+
+    let statusHtml = '';
+    if (latest) {
+      const label = latest.contentStatus === 'approved' ? '审核通过' : latest.contentStatus === 'rejected' ? '被拒绝' : '待审核';
+      statusHtml = `<span class="text-xs text-gray-400 mr-2">最近提交：${label}</span>`;
+    }
+
     return `<div class="task-card">
       <div class="flex justify-between items-start mb-3">
         <div class="font-bold text-lg text-gray-800">${esc(t.name)}</div>
@@ -141,13 +150,11 @@ function renderTasks() {
         ${t.reward ? `<div>🎁 <b>奖励</b>：${esc(t.reward)}</div>` : ''}
         ${t.launchDate ? `<div>📢 <b>释出时间</b>：${esc(t.launchDate)}</div>` : ''}
         ${t.deadline ? `<div>⏰ <b>提交截止</b>：${esc(t.deadline)}</div>` : ''}
-        ${t.req ? `<div> <b>内容要求</b>：${esc(t.req)}</div>` : ''}
+        ${t.req ? `<div>📝 <b>内容要求</b>：${esc(t.req)}</div>` : ''}
       </div>
-      <div class="flex justify-end">
-        ${mySignup
-          ? (mySignup.contentLink ? `<span class="text-sm text-green-600 font-medium">✅ 已提交，${mySignup.contentStatus === 'approved' ? '审核通过' : mySignup.contentStatus === 'rejected' ? '被拒绝' : '待审核'}</span>`
-            : `<span class="text-sm text-orange-600 font-medium">✅ 已报名</span>`)
-          : `<button class="btn-primary btn-sm" onclick="showSignup('${t.id}')">✍️ 报名参与</button>`}
+      <div class="flex justify-between items-center">
+        ${statusHtml}
+        <button class="btn-primary btn-sm" onclick="showSignup('${t.id}')">✍️ 报名参与</button>
       </div>
     </div>`;
   }).join('');
