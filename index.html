@@ -22,6 +22,8 @@
   input:focus { border-color:#6c3eb8; }
   .modal-backdrop { background:rgba(0,0,0,.45); }
   .tab-active { border-bottom:3px solid #6c3eb8;color:#6c3eb8;font-weight:600; }
+  .hot-card { border:1.5px solid #f0f0f0;border-radius:16px;padding:20px;background:white;transition:all .2s; }
+  .hot-card:hover { box-shadow:0 4px 20px rgba(108,62,184,.1); border-color:#d8c4f0; }
 </style>
 </head>
 <body class="bg-gradient-to-br from-purple-50 via-white to-pink-50 min-h-screen">
@@ -33,7 +35,7 @@
   </div>
 </div>
 
-<div class="max-w-2xl mx-auto mt-12 px-4 pb-16">
+<div class="max-w-2xl mx-auto mt-12 px-4">
   <div class="text-center mb-10">
     <div class="text-5xl mb-4">🎯</div>
     <h2 class="text-3xl font-bold text-gray-800 mb-2">请选择你的身份</h2>
@@ -58,6 +60,18 @@
       <div class="mt-3 text-xs text-purple-500 font-medium">需要登录</div>
     </div>
 
+  </div>
+</div>
+
+<!-- 今日热门征稿任务 -->
+<div class="max-w-2xl mx-auto mt-12 px-4 pb-16">
+  <div class="text-center mb-6">
+    <div class="text-2xl mb-2">🔥</div>
+    <h3 class="text-xl font-bold text-gray-800">今日热门征稿任务</h3>
+    <p class="text-gray-400 text-sm">最新发布的约稿任务，抢先参与</p>
+  </div>
+  <div id="hotTasks" class="space-y-3">
+    <div class="text-center py-8 text-gray-400">加载中...</div>
   </div>
 </div>
 
@@ -133,10 +147,8 @@ document.getElementById('adminPwdInput').addEventListener('keydown', e => { if(e
 
 // ---- Creator Auth ----
 function handleCreator() {
-  // Check if already logged in (session)
   const sessionUser = sessionStorage.getItem('creator_username');
   if (sessionUser) { window.location.href = 'creator.html'; return; }
-  // Show auth modal
   switchAuthTab('login');
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPwd').value = '';
@@ -199,12 +211,48 @@ async function doRegister() {
   }
 }
 
+// ---- Hot Tasks ----
+async function loadHotTasks() {
+  const container = document.getElementById('hotTasks');
+  try {
+    const data = await getDB();
+    const tasks = (data.tasks || []).filter(t => t.status === 'active');
+    const signups = data.signups || [];
+    const latest = tasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 3);
+
+    if (!latest.length) {
+      container.innerHTML = '<div class="text-center py-8 text-gray-400">暂无进行中的任务</div>';
+      return;
+    }
+
+    container.innerHTML = latest.map(t => {
+      const cnt = signups.filter(s => s.taskId === t.id).length;
+      return `<div class="hot-card card-hover" onclick="handleCreator()" style="cursor:pointer">
+        <div class="flex justify-between items-start mb-2">
+          <div class="font-bold text-gray-800">${esc(t.name)}</div>
+          <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">${cnt} 人已报名</span>
+        </div>
+        ${t.desc ? `<p class="text-sm text-gray-500 line-clamp-2">${esc(t.desc)}</p>` : ''}
+        <div class="flex items-center gap-3 mt-2 text-xs text-gray-400">
+          ${t.deadline ? `<span>⏰ 截止 ${esc(t.deadline)}</span>` : ''}
+          ${t.reward ? `<span>🎁 ${esc(t.reward)}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = '<div class="text-center py-8 text-gray-400">暂无任务</div>';
+  }
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.style.opacity = '1';
   setTimeout(() => { t.style.opacity = '0'; }, 2500);
 }
+
+loadHotTasks();
 </script>
 </body>
 </html>
