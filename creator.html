@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>创作者 · 第五人格约稿平台</title>
+<title id="pageTitle">创作者</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="config.js"></script>
 <script src="api.js"></script>
+<script>document.title = '创作者 · ' + GAME_CONFIG.name + '约稿平台';</script>
 <style>
+  :root { --tc: #6c3eb8; --th: #5a2ea0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
-  .btn-primary { background:#6c3eb8;color:white;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
-  .btn-primary:hover { background:#5a2ea0; }
+  .btn-primary { background:var(--tc);color:white;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
+  .btn-primary:hover { background:var(--th); }
   .btn-secondary { background:#f3f4f6;color:#374151;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
   .btn-secondary:hover { background:#e5e7eb; }
   .btn-success { background:#10b981;color:white;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;border:none;font-size:14px; }
@@ -17,17 +20,21 @@
   input[type=text],input[type=url],textarea {
     border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;width:100%;outline:none;transition:border .2s;font-size:14px;
   }
-  input:focus,textarea:focus { border-color:#6c3eb8; }
+  input:focus,textarea:focus { border-color:var(--tc); }
   textarea { min-height:60px;resize:vertical; }
   .modal-backdrop { background:rgba(0,0,0,.45); }
-  .tab-active { border-bottom:3px solid #6c3eb8;color:#6c3eb8;font-weight:600; }
+  .tab-active { border-bottom:3px solid var(--tc);color:var(--tc);font-weight:600; }
   .task-card { border:1.5px solid #f0f0f0;border-radius:16px;padding:24px;background:white;transition:all .2s; }
-  .task-card:hover { box-shadow:0 4px 20px rgba(108,62,184,.1); border-color:#d8c4f0; }
+  .task-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.08); border-color:var(--tc); }
   .status-badge { display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600; }
   .badge-pending { background:#fef3c7;color:#92400e; }
   .badge-approved { background:#d1fae5;color:#065f46; }
   .badge-rejected { background:#fee2e2;color:#991b1b; }
 </style>
+<script>
+document.documentElement.style.setProperty('--tc', GAME_CONFIG.themeColor);
+document.documentElement.style.setProperty('--th', GAME_CONFIG.themeHover);
+</script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -36,7 +43,7 @@
     <div class="flex items-center gap-3">
       <a href="index.html" class="text-gray-400 hover:text-gray-600">← 返回</a>
       <span class="text-gray-200">|</span>
-      <span class="font-bold text-gray-800">✍️ 创作者</span>
+      <span class="font-bold text-gray-800" id="creatorHeader">✍️ 创作者</span>
     </div>
     <div class="flex items-center gap-2">
       <span class="text-sm text-gray-500" id="userGreeting"></span>
@@ -88,6 +95,9 @@
 // Check login
 const username = sessionStorage.getItem('creator_username');
 if (!username) { window.location.href = 'index.html'; }
+
+// Dynamic game branding
+document.getElementById('creatorHeader').innerHTML = GAME_CONFIG.emoji + ' 创作者';
 
 let db = { tasks: [], signups: [], users: [], _version: 0 };
 
