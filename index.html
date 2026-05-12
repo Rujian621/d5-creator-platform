@@ -3,35 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>第五人格 · 创作者约稿平台</title>
+<title id="pageTitle">创作者约稿平台</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="config.js"></script>
 <script src="api.js"></script>
+<script>
+// Apply theme
+document.title = GAME_CONFIG.name + ' · 创作者约稿平台';
+</script>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
   .card-hover { transition: all .2s; }
-  .card-hover:hover { box-shadow: 0 8px 32px rgba(108,62,184,.15); transform: translateY(-3px); }
+  .card-hover:hover { box-shadow: 0 8px 32px rgba(0,0,0,.1); transform: translateY(-3px); }
   .identity-card { border:2px solid #f0f0f0;border-radius:20px;padding:28px 24px;cursor:pointer;transition:all .2s;background:white; }
-  .identity-card:hover { border-color:#6c3eb8; }
-  .btn-primary { background:#6c3eb8;color:white;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;transition:background .2s;border:none; }
-  .btn-primary:hover { background:#5a2ea0; }
+  .identity-card:hover { border-color: var(--theme-color); }
+  .btn-primary { background:var(--theme-color);color:white;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;transition:background .2s;border:none; }
+  .btn-primary:hover { background:var(--theme-hover); }
   .btn-secondary { background:#f3f4f6;color:#374151;border-radius:10px;padding:10px 24px;font-weight:600;cursor:pointer;border:none; }
   .btn-secondary:hover { background:#e5e7eb; }
   input[type=text],input[type=url],input[type=password] {
     border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;width:100%;outline:none;transition:border .2s;font-size:14px;
   }
-  input:focus { border-color:#6c3eb8; }
+  input:focus { border-color: var(--theme-color); }
   .modal-backdrop { background:rgba(0,0,0,.45); }
-  .tab-active { border-bottom:3px solid #6c3eb8;color:#6c3eb8;font-weight:600; }
+  .tab-active { border-bottom:3px solid var(--theme-color);color:var(--theme-color);font-weight:600; }
   .hot-card { border:1.5px solid #f0f0f0;border-radius:16px;padding:20px;background:white;transition:all .2s; }
-  .hot-card:hover { box-shadow:0 4px 20px rgba(108,62,184,.1); border-color:#d8c4f0; }
+  .hot-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.08); border-color: var(--theme-color); }
+  :root {
+    --theme-color: #6c3eb8;
+    --theme-hover: #5a2ea0;
+  }
 </style>
+<script>
+// Set theme variables
+document.documentElement.style.setProperty('--theme-color', GAME_CONFIG.themeColor);
+document.documentElement.style.setProperty('--theme-hover', GAME_CONFIG.themeHover);
+</script>
 </head>
-<body class="bg-gradient-to-br from-purple-50 via-white to-pink-50 min-h-screen">
+<body id="bodyEl">
 
 <div class="bg-white shadow-sm">
   <div class="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
-    <span class="text-2xl">🎮</span>
-    <span class="font-bold text-gray-800 text-lg">第五人格 · 创作者约稿平台</span>
+    <span class="text-2xl" id="headerEmoji">🎮</span>
+    <span class="font-bold text-gray-800 text-lg" id="headerTitle">约稿平台</span>
   </div>
 </div>
 
@@ -57,7 +71,7 @@
       <div class="text-4xl mb-3">✍️</div>
       <div class="font-bold text-gray-800 text-lg mb-1">创作者</div>
       <div class="text-sm text-gray-500 leading-relaxed">浏览任务 · 报名参与<br>提交笔记 · 查看审核</div>
-      <div class="mt-3 text-xs text-purple-500 font-medium">需要登录</div>
+      <div class="mt-3 text-xs font-medium" id="creatorLabel" style="color:var(--theme-color)">需要登录</div>
     </div>
 
   </div>
@@ -128,7 +142,12 @@
 <div id="toast" class="fixed top-4 right-4 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-[9999] opacity-0 transition-opacity duration-300 pointer-events-none" style="background:#1f2937"></div>
 
 <script>
-const ADMIN_PWD = 'xhsrj2026';
+// Apply dynamic content
+document.getElementById('headerEmoji').textContent = GAME_CONFIG.emoji;
+document.getElementById('headerTitle').textContent = GAME_CONFIG.name + ' · 创作者约稿平台';
+document.getElementById('bodyEl').className = 'min-h-screen bg-gradient-to-br ' + GAME_CONFIG.themeLight;
+
+const ADMIN_PWD = GAME_CONFIG.adminPwd;
 
 // ---- Admin ----
 function handleAdmin() {
