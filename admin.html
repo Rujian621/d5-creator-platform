@@ -42,7 +42,10 @@
       <span class="text-gray-200">|</span>
       <span class="font-bold text-gray-800">🎛️ 运营后台</span>
     </div>
-    <button class="btn-secondary btn-sm" onclick="exportAll()">📋 导出报表</button>
+    <div class="flex items-center gap-2">
+      <select id="exportTaskSelect" class="!py-1.5 !px-3 text-sm" style="min-width:140px"><option value="">全部任务</option></select>
+      <button class="btn-secondary btn-sm" onclick="exportSelected()">📋 导出报表</button>
+    </div>
   </div>
 </div>
 
@@ -161,18 +164,6 @@ async function loadData() {
   }
   hideLoading();
   refreshAll();
-}
-
-async function saveData() {
-  showLoading();
-  try {
-    // For now, we push full state updates via individual KV ops
-    // The backend handles merging
-    await updateDB(db);
-  } catch (e) {
-    showToast('保存失败: ' + e.message);
-  }
-  hideLoading();
 }
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -346,9 +337,21 @@ function populateFilters() {
   db.tasks.forEach(t => { sel.innerHTML += `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.name)}</option>`; });
 }
 
-function exportAll() {
+function populateExportFilter() {
+  const sel = document.getElementById('exportTaskSelect'); const cur = sel.value;
+  sel.innerHTML = '<option value="">全部任务</option>';
+  db.tasks.forEach(t => { sel.innerHTML += `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.name)}</option>`; });
+}
+
+function exportSelected() {
+  const tf = document.getElementById('exportTaskSelect').value;
+  let list = db.signups;
+  if (tf) list = list.filter(s => s.taskId === tf);
+  if (!list.length) { showToast('没有可导出的数据'); return; }
+
+  const taskName = tf ? (db.tasks.find(t => t.id === tf)?.name || '未知任务') : '全部任务';
   let csv = '任务,昵称,主页,笔记链接,状态,提交时间\n';
-  db.signups.forEach(s => {
+  list.forEach(s => {
     csv += [`"${s.taskName || ''}"`, `"${s.creatorName || ''}"`, `"${s.creatorProfile || ''}"`, `"${s.contentLink || ''}"`,
       s.contentStatus === 'approved' ? '通过' : s.contentStatus === 'rejected' ? '拒绝' : '待审核',
       s.createdAt ? new Date(s.createdAt).toLocaleString('zh-CN') : ''
@@ -356,15 +359,15 @@ function exportAll() {
   });
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `约稿数据_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
-  showToast('报表已导出 ');
+  a.download = `约稿数据_${taskName}_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  showToast(`已导出 ${list.length} 条记录 📋`);
 }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = '1'; setTimeout(() => { t.style.opacity = '0'; }, 2500); }
 
-function refreshAll() { renderTasks(); populateFilters(); renderContents(); }
+function refreshAll() { renderTasks(); populateFilters(); populateExportFilter(); renderContents(); }
 loadData();
 </script>
 </body>
