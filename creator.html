@@ -79,7 +79,8 @@ document.documentElement.style.setProperty('--th', GAME_CONFIG.themeHover);
       <div><label class="block text-xs font-semibold text-gray-500 mb-1">小红书主页链接 <span class="text-red-500">*</span></label>
         <input type="url" id="s_profile" placeholder="https://www.xiaohongshu.com/user/profile/..." /></div>
       <div><label class="block text-xs font-semibold text-gray-500 mb-1">活动任务笔记链接 <span class="text-red-500">*</span></label>
-        <input type="url" id="s_link" placeholder="https://www.xiaohongshu.com/explore/..." /></div>
+        <input type="url" id="s_link" placeholder="https://www.xiaohongshu.com/explore/..." />
+        <p class="text-xs text-red-500 mt-1">⚠️ 请填没有中文的纯链接格式，否则不予审核</p></div>
     </div>
     <input type="hidden" id="s_taskId" value="" />
     <div class="flex gap-3 mt-5">
@@ -158,6 +159,7 @@ function renderTasks() {
         <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">${maxLabel} 人已报名</span>
       </div>
       ${t.desc ? `<p class="text-sm text-gray-600 mb-3 leading-relaxed">${esc(t.desc)}</p>` : ''}
+      ${t.noteExample ? `<div class="mb-3"><a href="${esc(t.noteExample)}" target="_blank" class="inline-flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-lg" style="background:#fdf2f8;color:var(--tc)">📖 笔记案例：点击查看参考 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a></div>` : ''}
       <div class="space-y-1.5 text-xs text-gray-500 mb-3">
         ${t.reward ? `<div>🎁 <b>奖励</b>：${esc(t.reward)}</div>` : ''}
         ${t.launchDate ? `<div>📢 <b>释出时间</b>：${esc(t.launchDate)}</div>` : ''}
