@@ -137,8 +137,10 @@ document.documentElement.style.setProperty('--th', GAME_CONFIG.themeHover);
         <input type="text" id="t_reward" placeholder="例如：根据粉丝量级结算报酬" /></div>
       <div><label class="block text-xs font-semibold text-gray-500 mb-1">任务描述</label>
         <textarea id="t_desc" placeholder="任务说明、注意事项等"></textarea></div>
-      <div><label class="block text-xs font-semibold text-gray-500 mb-1">笔记案例</label>
-        <input type="url" id="t_noteExample" placeholder="粘贴参考笔记链接，创作者可点击跳转（可选）" /></div>
+      <div><label class="block text-xs font-semibold text-gray-500 mb-1">笔记案例（最多 3 个）</label>
+        <input type="url" id="t_noteExample1" placeholder="笔记链接 1（可选）" class="mb-1.5" />
+        <input type="url" id="t_noteExample2" placeholder="笔记链接 2（可选）" class="mb-1.5" />
+        <input type="url" id="t_noteExample3" placeholder="笔记链接 3（可选）" /></div>
       <div><label class="block text-xs font-semibold text-gray-500 mb-1">内容要求</label>
         <textarea id="t_req" placeholder="例如：笔记需包含至少50%游戏实机画面..."></textarea></div>
       <div class="grid grid-cols-2 gap-3">
@@ -239,6 +241,9 @@ function showTaskModal(editId) {
     document.getElementById('t_reward').value = t.reward || '';
     document.getElementById('t_desc').value = t.desc || '';
     document.getElementById('t_noteExample').value = t.noteExample || '';
+    document.getElementById('t_noteExample1').value = (t.noteExamples && t.noteExamples[0]) || '';
+    document.getElementById('t_noteExample2').value = (t.noteExamples && t.noteExamples[1]) || '';
+    document.getElementById('t_noteExample3').value = (t.noteExamples && t.noteExamples[2]) || '';
     document.getElementById('t_req').value = t.req || '';
     document.getElementById('t_launchDate').value = t.launchDate || '';
     document.getElementById('t_deadline').value = t.deadline || '';
@@ -247,7 +252,7 @@ function showTaskModal(editId) {
   } else {
     document.getElementById('taskModalTitle').textContent = '📝 发布推广任务';
     document.getElementById('t_editId').value = '';
-    ['t_name','t_reward','t_desc','t_noteExample','t_req','t_launchDate','t_deadline'].forEach(id => document.getElementById(id).value = '');
+    ['t_name','t_reward','t_desc','t_noteExample','t_noteExample1','t_noteExample2','t_noteExample3','t_req','t_launchDate','t_deadline'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('t_maxSignup').value = '';
     document.getElementById('t_status').value = 'active';
   }
@@ -265,6 +270,7 @@ async function saveTask() {
     reward: document.getElementById('t_reward').value.trim(),
     desc: document.getElementById('t_desc').value.trim(),
     noteExample: document.getElementById('t_noteExample').value.trim(),
+    noteExamples: [document.getElementById('t_noteExample1').value.trim(), document.getElementById('t_noteExample2').value.trim(), document.getElementById('t_noteExample3').value.trim()].filter(Boolean),
     req: document.getElementById('t_req').value.trim(),
     launchDate: document.getElementById('t_launchDate').value.trim(),
     deadline,
@@ -347,16 +353,17 @@ function renderContents() {
       <td class="px-4 py-3 text-center">
         ${s.contentStatus === 'pending' ? `
           <button class="btn-success btn-sm mr-1" onclick="reviewContent('${s.id}','approved')">✅</button>
-          <button class="btn-danger btn-sm" onclick="reviewContent('${s.id}','rejected')">❌</button>
+          <button class="btn-danger btn-sm" onclick="openRejectModal('${s.id}')">❌</button>
         ` : `<button class="btn-secondary btn-sm" onclick="viewDetail('${s.id}')">查看</button>`}
       </td>
     </tr>`;
   }).join('');
 }
 
-async function reviewContent(id, status) {
+async function reviewContent(id, status, remark) {
   const s = db.signups.find(x => x.id === id); if (!s) return;
   s.contentStatus = status;
+  if (status === 'rejected' && remark) s.reviewRemark = remark;
   showLoading();
   try {
     await updateSignup(s);
@@ -368,6 +375,21 @@ async function reviewContent(id, status) {
   }
 }
 
+function openRejectModal(id) {
+  const s = db.signups.find(x => x.id === id); if (!s) return;
+  document.getElementById('rejectSignupId').value = id;
+  document.getElementById('rejectSignupInfo').textContent = `${s.taskName || '-'} | ${s.creatorName} | ${s.contentLink}`;
+  document.getElementById('rejectRemark').value = '';
+  document.getElementById('rejectModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('rejectRemark').focus(), 100);
+}
+function submitReject() {
+  const id = document.getElementById('rejectSignupId').value;
+  const remark = document.getElementById('rejectRemark').value.trim();
+  closeModal('rejectModal');
+  reviewContent(id, 'rejected', remark);
+}
+
 function viewDetail(id) {
   const s = db.signups.find(x => x.id === id); if (!s) return;
   document.getElementById('detailContent').innerHTML = `
@@ -376,11 +398,12 @@ function viewDetail(id) {
     <p><b>主页：</b><a href="${esc(s.creatorProfile || '#')}" target="_blank" class="text-purple-600 hover:underline">${esc(s.creatorProfile || '-')}</a></p>
     <p><b>笔记链接：</b><a href="${esc(s.contentLink)}" target="_blank" class="text-purple-600 hover:underline">${esc(s.contentLink)}</a></p>
     <p><b>状态：</b>${s.contentStatus === 'approved' ? '✅ 已通过' : s.contentStatus === 'rejected' ? '❌ 已拒绝' : '⏳ 待审核'}</p>
+    ${s.reviewRemark ? `<p><b>备注：</b><span class="text-red-600">${esc(s.reviewRemark)}</span></p>` : ''}
   `;
   document.getElementById('detailActionBtns').innerHTML = `
     <button class="btn-secondary flex-1" onclick="closeModal('viewDetailModal')">关闭</button>
     ${s.contentStatus === 'pending' ? `<button class="btn-success flex-1" onclick="reviewContent('${s.id}','approved');closeModal('viewDetailModal')">通过</button>
-    <button class="btn-danger flex-1" onclick="reviewContent('${s.id}','rejected');closeModal('viewDetailModal')">拒绝</button>` : ''}
+    <button class="btn-danger flex-1" onclick="openRejectModal('${s.id}');closeModal('viewDetailModal')">拒绝</button>` : ''}
   `;
   document.getElementById('viewDetailModal').classList.remove('hidden');
 }
@@ -478,5 +501,19 @@ function showToast(msg) { const t = document.getElementById('toast'); t.textCont
 function refreshAll() { renderTasks(); populateFilters(); populateExportFilter(); renderContents(); renderUsers(); }
 loadData();
 </script>
+
+<!-- Reject Modal -->
+<div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 w-[480px] shadow-xl">
+    <h3 class="text-lg font-bold text-gray-800 mb-2">❌ 拒绝并备注</h3>
+    <p class="text-xs text-gray-400 mb-3 truncate" id="rejectSignupInfo"></p>
+    <textarea id="rejectRemark" class="w-full border border-gray-200 rounded-lg p-3 text-sm min-h-[80px]" placeholder="请输入拒绝原因，创作者将看到此备注"></textarea>
+    <div class="flex gap-3 mt-4">
+      <button class="btn-secondary flex-1" onclick="closeModal('rejectModal')">取消</button>
+      <button class="btn-primary flex-1" style="background:#dc2626" onclick="submitReject()">确认拒绝</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
