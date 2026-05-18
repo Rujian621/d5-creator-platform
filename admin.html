@@ -236,7 +236,7 @@ function showTaskModal(editId) {
   const v = (id) => { const e = document.getElementById(id); return e || { value: '', textContent: '' }; };
   if (editId) {
     const t = db.tasks.find(x => x.id === editId); if (!t) return;
-    document.getElementById('taskModalTitle').textContent = '✏️ 编辑任务';
+    v('taskModalTitle').textContent = '✏️ 编辑任务';
     v('t_editId').value = editId;
     v('t_name').value = t.name || '';
     v('t_reward').value = t.reward || '';
@@ -251,7 +251,7 @@ function showTaskModal(editId) {
     v('t_maxSignup').value = t.maxSignup || '';
     v('t_status').value = t.status || 'active';
   } else {
-    document.getElementById('taskModalTitle').textContent = ' 发布推广任务';
+    v('taskModalTitle').textContent = '📝 发布推广任务';
     v('t_editId').value = '';
     ['t_name','t_reward','t_desc','t_noteExample','t_noteExample1','t_noteExample2','t_noteExample3','t_req','t_launchDate','t_deadline'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
     v('t_maxSignup').value = '';
