@@ -377,11 +377,21 @@ async function reviewContent(id, status, remark) {
 
 function openRejectModal(id) {
   const s = db.signups.find(x => x.id === id); if (!s) return;
-  document.getElementById('rejectSignupId').value = id;
-  document.getElementById('rejectSignupInfo').textContent = `${s.taskName || '-'} | ${s.creatorName} | ${s.contentLink}`;
-  document.getElementById('rejectRemark').value = '';
-  document.getElementById('rejectModal').classList.remove('hidden');
-  setTimeout(() => document.getElementById('rejectRemark').focus(), 100);
+  const elId = document.getElementById('rejectSignupId');
+  const elInfo = document.getElementById('rejectSignupInfo');
+  const elRemark = document.getElementById('rejectRemark');
+  const elModal = document.getElementById('rejectModal');
+  if (!elId || !elInfo || !elRemark || !elModal) {
+    // 弹窗 HTML 还没加载，直接用 prompt 让用户输入备注
+    const remark = prompt('请输入拒绝原因：') || '';
+    reviewContent(id, 'rejected', remark);
+    return;
+  }
+  elId.value = id;
+  elInfo.textContent = `${s.taskName || '-'} | ${s.creatorName} | ${s.contentLink}`;
+  elRemark.value = '';
+  elModal.classList.remove('hidden');
+  setTimeout(() => elRemark.focus(), 100);
 }
 function submitReject() {
   const id = document.getElementById('rejectSignupId').value;
