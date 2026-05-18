@@ -400,6 +400,25 @@ function submitReject() {
   reviewContent(id, 'rejected', remark);
 }
 
+function openChangeReviewModal(id) {
+  const s = db.signups.find(x => x.id === id); if (!s) return;
+  document.getElementById('changeReviewSignupId').value = id;
+  document.getElementById('changeReviewInfo').textContent = `${s.taskName || '-'} | ${s.creatorName} | 当前：${s.contentStatus === 'approved' ? '已通过' : '已拒绝'}`;
+  document.getElementById('changeReviewApproved').checked = s.contentStatus === 'approved';
+  document.getElementById('changeReviewRejected').checked = s.contentStatus === 'rejected';
+  document.getElementById('changeReviewRemark').value = s.reviewRemark || '';
+  document.getElementById('changeReviewModal').classList.remove('hidden');
+}
+
+function submitChangeReview() {
+  const id = document.getElementById('changeReviewSignupId').value;
+  const newStatus = document.getElementById('changeReviewApproved').checked ? 'approved' : 'rejected';
+  const remark = document.getElementById('changeReviewRemark').value.trim();
+  closeModal('changeReviewModal');
+  reviewContent(id, newStatus, remark);
+  showToast('审核结果已修改');
+}
+
 function viewDetail(id) {
   const s = db.signups.find(x => x.id === id); if (!s) return;
   document.getElementById('detailContent').innerHTML = `
@@ -413,7 +432,7 @@ function viewDetail(id) {
   document.getElementById('detailActionBtns').innerHTML = `
     <button class="btn-secondary flex-1" onclick="closeModal('viewDetailModal')">关闭</button>
     ${s.contentStatus === 'pending' ? `<button class="btn-success flex-1" onclick="reviewContent('${s.id}','approved');closeModal('viewDetailModal')">通过</button>
-    <button class="btn-danger flex-1" onclick="openRejectModal('${s.id}');closeModal('viewDetailModal')">拒绝</button>` : ''}
+    <button class="btn-danger flex-1" onclick="openRejectModal('${s.id}');closeModal('viewDetailModal')">拒绝</button>` : `<button class="btn-danger flex-1" onclick="openChangeReviewModal('${s.id}')">修改审核结果</button>`}
   `;
   document.getElementById('viewDetailModal').classList.remove('hidden');
 }
@@ -521,6 +540,27 @@ loadData();
     <div class="flex gap-3 mt-4">
       <button class="btn-secondary flex-1" onclick="closeModal('rejectModal')">取消</button>
       <button class="btn-primary flex-1" style="background:#dc2626" onclick="submitReject()">确认拒绝</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change Review Modal -->
+<div id="changeReviewModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 w-[440px] shadow-xl">
+    <h3 class="text-lg font-bold text-gray-800 mb-1">修改审核结果</h3>
+    <p class="text-gray-400 text-sm mb-4" id="changeReviewInfo"></p>
+    <input type="hidden" id="changeReviewSignupId" />
+    <div class="space-y-3 mb-4">
+      <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="changeReviewStatus" id="changeReviewApproved" value="approved" class="accent-green-600" /> <span class="text-sm"> 通过</span></label>
+      <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="changeReviewStatus" id="changeReviewRejected" value="rejected" class="accent-red-600" /> <span class="text-sm"> 拒绝</span></label>
+    </div>
+    <div class="mb-4">
+      <label class="block text-xs font-semibold text-gray-500 mb-1">备注（创作者将看到此备注）</label>
+      <textarea id="changeReviewRemark" class="w-full border border-gray-200 rounded-lg p-3 text-sm min-h-[80px]" placeholder="请输入备注，创作者将看到"></textarea>
+    </div>
+    <div class="flex gap-3">
+      <button class="btn-secondary flex-1" onclick="closeModal('changeReviewModal')">取消</button>
+      <button class="btn-primary flex-1" onclick="submitChangeReview()">确认修改</button>
     </div>
   </div>
 </div>
