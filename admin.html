@@ -233,28 +233,29 @@ function decodePwd(encoded) {
 // ---- Tasks ----
 function showTaskModal(editId) {
   document.getElementById('taskModal').classList.remove('hidden');
+  const v = (id) => { const e = document.getElementById(id); return e; };
   if (editId) {
     const t = db.tasks.find(x => x.id === editId); if (!t) return;
     document.getElementById('taskModalTitle').textContent = '✏️ 编辑任务';
-    document.getElementById('t_editId').value = editId;
-    document.getElementById('t_name').value = t.name || '';
-    document.getElementById('t_reward').value = t.reward || '';
-    document.getElementById('t_desc').value = t.desc || '';
-    document.getElementById('t_noteExample').value = t.noteExample || '';
-    document.getElementById('t_noteExample1').value = (t.noteExamples && t.noteExamples[0]) || '';
-    document.getElementById('t_noteExample2').value = (t.noteExamples && t.noteExamples[1]) || '';
-    document.getElementById('t_noteExample3').value = (t.noteExamples && t.noteExamples[2]) || '';
-    document.getElementById('t_req').value = t.req || '';
-    document.getElementById('t_launchDate').value = t.launchDate || '';
-    document.getElementById('t_deadline').value = t.deadline || '';
-    document.getElementById('t_maxSignup').value = t.maxSignup || '';
-    document.getElementById('t_status').value = t.status || 'active';
+    v('t_editId').value = editId;
+    v('t_name').value = t.name || '';
+    v('t_reward').value = t.reward || '';
+    v('t_desc').value = t.desc || '';
+    v('t_noteExample').value = t.noteExample || '';
+    if (v('t_noteExample1')) v('t_noteExample1').value = (t.noteExamples && t.noteExamples[0]) || '';
+    if (v('t_noteExample2')) v('t_noteExample2').value = (t.noteExamples && t.noteExamples[1]) || '';
+    if (v('t_noteExample3')) v('t_noteExample3').value = (t.noteExamples && t.noteExamples[2]) || '';
+    v('t_req').value = t.req || '';
+    v('t_launchDate').value = t.launchDate || '';
+    v('t_deadline').value = t.deadline || '';
+    v('t_maxSignup').value = t.maxSignup || '';
+    v('t_status').value = t.status || 'active';
   } else {
-    document.getElementById('taskModalTitle').textContent = '📝 发布推广任务';
-    document.getElementById('t_editId').value = '';
-    ['t_name','t_reward','t_desc','t_noteExample','t_noteExample1','t_noteExample2','t_noteExample3','t_req','t_launchDate','t_deadline'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('t_maxSignup').value = '';
-    document.getElementById('t_status').value = 'active';
+    document.getElementById('taskModalTitle').textContent = ' 发布推广任务';
+    v('t_editId').value = '';
+    ['t_name','t_reward','t_desc','t_noteExample','t_noteExample1','t_noteExample2','t_noteExample3','t_req','t_launchDate','t_deadline'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+    v('t_maxSignup').value = '';
+    v('t_status').value = 'active';
   }
 }
 function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
@@ -270,7 +271,11 @@ async function saveTask() {
     reward: document.getElementById('t_reward').value.trim(),
     desc: document.getElementById('t_desc').value.trim(),
     noteExample: document.getElementById('t_noteExample').value.trim(),
-    noteExamples: [document.getElementById('t_noteExample1').value.trim(), document.getElementById('t_noteExample2').value.trim(), document.getElementById('t_noteExample3').value.trim()].filter(Boolean),
+    noteExamples: [
+      (document.getElementById('t_noteExample1') || {}).value || '',
+      (document.getElementById('t_noteExample2') || {}).value || '',
+      (document.getElementById('t_noteExample3') || {}).value || ''
+    ].filter(Boolean),
     req: document.getElementById('t_req').value.trim(),
     launchDate: document.getElementById('t_launchDate').value.trim(),
     deadline,
