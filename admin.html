@@ -270,7 +270,7 @@ async function saveTask() {
     name,
     reward: document.getElementById('t_reward').value.trim(),
     desc: document.getElementById('t_desc').value.trim(),
-    noteExample: document.getElementById('t_noteExample').value.trim(),
+    noteExample: (document.getElementById('t_noteExample') || {value:''}).value.trim(),
     noteExamples: [
       (document.getElementById('t_noteExample1') || {}).value || '',
       (document.getElementById('t_noteExample2') || {}).value || '',
