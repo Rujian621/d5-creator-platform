@@ -233,7 +233,7 @@ function decodePwd(encoded) {
 // ---- Tasks ----
 function showTaskModal(editId) {
   document.getElementById('taskModal').classList.remove('hidden');
-  const v = (id) => { const e = document.getElementById(id); return e; };
+  const v = (id) => { const e = document.getElementById(id); return e || { value: '', textContent: '' }; };
   if (editId) {
     const t = db.tasks.find(x => x.id === editId); if (!t) return;
     document.getElementById('taskModalTitle').textContent = '✏️ 编辑任务';
