@@ -174,7 +174,10 @@ function renderTasks() {
       </div>
       <div class="flex justify-between items-center">
         ${statusHtml}
-        <button class="btn-primary btn-sm" onclick="showSignup('${t.id}')">✍️ 报名参与</button>
+        ${(t.maxSignup && cnt >= parseInt(t.maxSignup))
+          ? `<button class="btn-secondary btn-sm" disabled style="opacity:.5;cursor:not-allowed">名额已满</button>`
+          : `<button class="btn-primary btn-sm" onclick="showSignup('${t.id}')">✍️ 报名参与</button>`
+        }
       </div>
     </div>`;
   }).join('');
@@ -236,6 +239,15 @@ async function submitSignup() {
   localStorage.setItem('cr_profile', profile);
 
   const task = db.tasks.find(t => t.id === taskId);
+
+  // 检查名额上限
+  if (task && task.maxSignup) {
+    const cnt = db.signups.filter(s => s.taskId === taskId).length;
+    if (cnt >= parseInt(task.maxSignup)) {
+      showToast('该任务名额已满，无法继续报名 ❌'); return;
+    }
+  }
+
   const signup = {
     id: genId(),
     taskId,
