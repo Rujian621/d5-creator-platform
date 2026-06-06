@@ -55,6 +55,9 @@ async function createSignup(signup) {
 async function updateSignup(signup) {
   return apiCall('update', { type: 'signup', value: signup });
 }
+async function deleteSignup(id) {
+  return apiCall('delete', { type: 'signup', id });
+}
 
 // User: reset password (admin)
 async function resetUserPassword(username, newPassword) {
