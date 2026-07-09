@@ -5,12 +5,16 @@
 const DOMAIN_MAP = {
   // 第五人格
   'd5-creator-platform.pages.dev': 'd5',
+  'd5.xhscollab.cn': 'd5',
   // 洛克王国
   'lk-creator-platform.pages.dev': 'lk',
+  'lk.xhscollab.cn': 'lk',
   // 超自然行动组
   'czr-creator-platform.pages.dev': 'czr',
+  'czr.xhscollab.cn': 'czr',
   // 鹅鸭杀
   'gag-creator-platform.pages.dev': 'gag',
+  'gag.xhscollab.cn': 'gag',
 };
 
 // 也支持 URL 参数 ?game=xxx 用于本地测试
